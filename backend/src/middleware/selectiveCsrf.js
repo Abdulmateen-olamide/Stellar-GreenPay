@@ -13,7 +13,15 @@ const EXEMPT_PREFIXES = [
   "/api/v1/notifications",
 ];
 
-const EXEMPT_EXACT = new Set(["/health", "/api/health", "/api/v1/health", "/api/readiness"]);
+const EXEMPT_EXACT = new Set([
+  "/health",
+  "/api/health",
+  "/api/v1/health",
+  "/api/readiness",
+  // Prometheus scrape endpoints are machine-to-machine, not browser forms.
+  "/metrics",
+  "/api/metrics",
+]);
 const DEFAULT_IGNORE_METHODS = ["GET", "HEAD", "OPTIONS"];
 const RANDOM_VALUE_BYTES = 32;
 const BASE64URL_32_BYTES = /^[A-Za-z0-9_-]{43}$/;
