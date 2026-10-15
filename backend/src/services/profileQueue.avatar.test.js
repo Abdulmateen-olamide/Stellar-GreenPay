@@ -12,6 +12,10 @@ const mockUploadDir = fs.mkdtempSync(path.join(os.tmpdir(), "greenpay-avatar-"))
 const mockSend = jest.fn();
 const mockQuery = jest.fn();
 
+// These tests exercise avatar processing, not pg-boss registration. Keeping
+// the queue constructor mocked also avoids loading pg-boss's ESM entrypoint
+// through Jest's CommonJS runtime.
+jest.mock("pg-boss", () => jest.fn());
 jest.mock("../db/pool", () => ({ query: (...args) => mockQuery(...args) }));
 jest.mock("./storage", () => ({ UPLOAD_DIR: mockUploadDir }));
 jest.mock("../logger", () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
