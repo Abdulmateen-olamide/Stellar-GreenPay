@@ -236,6 +236,7 @@ export default function ProjectDetail({
         isComplete={isComplete}
         donorCount={project.donorCount}
         raisedXLM={project.raisedXLM}
+        raisedUSDC={project.raisedUSDC}
         goalXLM={project.goalXLM}
         particles={celebrationParticles}
       />

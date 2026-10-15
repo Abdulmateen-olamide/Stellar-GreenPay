@@ -5,6 +5,7 @@ export interface ProjectCelebrationProps {
   isComplete: boolean;
   donorCount: number;
   raisedXLM: string;
+  raisedUSDC?: string;
   goalXLM: string;
   particles: Array<{ left: string; animationDelay: string; animationDuration: string }>;
 }
@@ -13,6 +14,7 @@ export default function ProjectCelebration({
   isComplete,
   donorCount,
   raisedXLM,
+  raisedUSDC,
   goalXLM,
   particles,
 }: ProjectCelebrationProps) {
@@ -46,7 +48,8 @@ export default function ProjectCelebration({
           <div className="mt-6 inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-6 py-3 rounded-full border border-white/30">
             <span className="text-2xl">✅</span>
             <span className="font-semibold text-lg">
-              {formatXLM(raisedXLM)} raised of {formatXLM(goalXLM)} goal
+              {formatXLM(raisedXLM)} XLM raised{Number(raisedUSDC || 0) > 0 ? ` · ${formatAmount(Number(raisedUSDC))} USDC` : ""} of{" "}
+              {formatXLM(goalXLM)} goal
             </span>
           </div>
         </div>

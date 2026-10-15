@@ -26,6 +26,7 @@ const projectsRouter = require("./routes/projects");
 const uploadsRouter = require("./routes/uploads");
 const donationsRouter = require("./routes/donations");
 const statsRouter = require("./routes/stats");
+const adminRouter = require("./routes/admin");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -33,6 +34,35 @@ const server = http.createServer(app);
 
 // Sentry initialization (must be added before other middleware)
 initSentry(app);
+
+// ── Security & CSP (Helmet) ──────────────────────────────────────────────────
+const apiHelmet = helmet({
+  contentSecurityPolicy: {
+    useDefaults: false,
+    directives: {
+      defaultSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+    },
+  },
+});
+
+const docsHelmet = helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:"],
+    },
+  },
+});
+
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV !== "production" && req.path.startsWith("/api/docs")) {
+    return docsHelmet(req, res, next);
+  }
+  return apiHelmet(req, res, next);
+});
 
 // ── Swagger UI (development) ─────────────────────────────────────────────────
 if (process.env.NODE_ENV !== "production") {
@@ -62,11 +92,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(helmet());
-app.use((req, res, next) => {
-  res.setHeader("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'");
-  next();
-});
 app.use(requestLogger);
 app.use(express.json({ limit: "20kb" }));
 app.use(cookieParser());
@@ -142,6 +167,9 @@ app.use("/api/v1/ratings", require("./routes/ratings"));
 // Team giving (corporate/group donation profiles).
 app.use("/api/teams", require("./routes/teams"));
 app.use("/api/v1/teams", require("./routes/teams"));
+// Admin dashboard, audit log and moderation endpoints (dual-prefix like projects/donations).
+app.use("/api/admin", adminRouter);
+app.use("/api/v1/admin", adminRouter);
 app.use((req, res) => res.status(404).json({ error: `${req.method} ${req.path} not found` }));
 // Sentry error handler — capture exceptions before the final error middleware
 app.use(sentryErrorMiddleware());
