@@ -8,13 +8,6 @@ const express = require("express");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 const http = require("http");
-const express = require("express");
-const helmet = require("helmet");
-const cookieParser = require("cookie-parser");
-const csurf = require("csurf");
-const rateLimit = require("express-rate-limit");
-const logger = require("./logger");
-const requestLogger = require("./middleware/requestLogger");
 const { Server } = require("socket.io");
 const { initSentry, errorHandler: sentryErrorMiddleware } = require("./services/sentry");
 const { runMigrations } = require("./db/migrate");
@@ -33,7 +26,6 @@ const projectsRouter = require("./routes/projects");
 const uploadsRouter = require("./routes/uploads");
 const donationsRouter = require("./routes/donations");
 const statsRouter = require("./routes/stats");
-const certificateRouter = require("./routes/certificate");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -88,26 +80,7 @@ app.use(createSelectiveCsrf({
     path: "/",
   },
   ignoreMethods: ["GET", "HEAD", "OPTIONS"],
- fix/csrf-mobile-extension-clients
 }));
-
-});
-app.use((req, res, next) => {
-  if (
-    req.path.startsWith("/api/notifications") ||
-    req.path.startsWith("/api/v1/notifications") ||
-    req.path === "/health" ||
-    req.path === "/api/health" ||
-    req.path === "/api/v1/health" ||
-    req.path === "/api/readiness" ||
-    req.path === "/metrics" ||
-    req.path === "/api/metrics"
-  ) {
-    return next();
-  }
-  return csrfProtection(req, res, next);
-});
- main
 
 const healthRouter = require("./routes/health");
 const readinessRouter = require("./routes/readiness");
@@ -118,8 +91,6 @@ app.use("/api/health", healthRouter);
 
 app.use("/api/v1/health", healthRouter);
 app.use("/api/readiness", readinessRouter);
-const donationsRouter = require("./routes/donations");
-const adminRouter = require("./routes/admin");
 app.use("/api/projects", projectsRouter);
 app.use("/api/uploads", uploadsRouter);
 app.use("/api/donations", donationsRouter);
@@ -128,7 +99,9 @@ app.use("/api/v1/uploads", uploadsRouter);
 app.use("/api/v1/donations", donationsRouter);
 app.use("/api/stats", statsRouter);
 app.use("/api/v1/stats", statsRouter);
-main
+const profilesRouter = require("./routes/profiles");
+app.use("/api/profiles", profilesRouter);
+app.use("/api/v1/profiles", profilesRouter);
 
 const origins = getAllowedOrigins();
 app.use(...createCorsMiddleware(origins));
@@ -159,8 +132,6 @@ app.use("/api/subscriptions", require("./routes/subscriptions"));
 app.use("/api/v1/subscriptions", require("./routes/subscriptions"));
 app.use("/api/referrals", require("./routes/referrals"));
 app.use("/api/v1/referrals", require("./routes/referrals"));
-app.use("/api/impact/certificate", certificateRouter);
-app.use("/api/v1/impact/certificate", certificateRouter);
 // Recurring donation schedules are the source of truth for mobile (#1059):
 // the app reads them from here and treats AsyncStorage as an offline cache.
 app.use("/api/recurring-donations", require("./routes/recurringDonations"));
