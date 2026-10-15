@@ -4,9 +4,25 @@ import {
   matchesPattern,
   getSitePatternFromUrl,
   getHostnameFromUrl,
+  isValidAllowlistPattern,
 } from '../allowlist';
 
 describe('Allowlist Logic', () => {
+  describe('isValidAllowlistPattern', () => {
+    it('accepts supported host, scheme, wildcard, and path forms', () => {
+      expect(isValidAllowlistPattern('example.com/*')).toBe(true);
+      expect(isValidAllowlistPattern('https://*.example.com/donate/*')).toBe(true);
+      expect(isValidAllowlistPattern('*://greenpay.app/projects/*')).toBe(true);
+    });
+
+    it('rejects malformed or unsafe entries', () => {
+      expect(isValidAllowlistPattern('')).toBe(false);
+      expect(isValidAllowlistPattern('https://bad host')).toBe(false);
+      expect(isValidAllowlistPattern('javascript:alert(1)')).toBe(false);
+      expect(isValidAllowlistPattern('*://*/*')).toBe(false);
+    });
+  });
+
   describe('DEFAULT_ALLOWLIST', () => {
     it('contains GreenPay internal domains only and no external pages', () => {
       expect(DEFAULT_ALLOWLIST.length).toBeGreaterThan(0);
