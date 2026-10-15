@@ -3,20 +3,8 @@ import { useI18n } from "@/lib/i18n";
 import { timeAgo } from "@/utils/format";
 import type { ProjectUpdate } from "@/utils/types";
 
-/** Simple markdown-to-HTML: bold, italic, links, line breaks. */
-export function renderMarkdown(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(
-      /\[([^\]]+)\]\(([^)]+)\)/g,
-      '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-forest-600 hover:underline">$1</a>',
-    )
-    .replace(/\n/g, "<br />");
-}
+import { renderMarkdown } from "@/lib/renderMarkdown";
+export { renderMarkdown };
 
 export interface ProjectUpdatesFeedProps {
   updates: ProjectUpdate[];
