@@ -11,7 +11,8 @@
     "connectWallet": "Connecter Portefeuille",
     "disconnect": "Déconnecter",
     "mainnet": "Réseau Principal",
-    "testnet": "Réseau de Test"
+    "testnet": "Réseau de Test",
+    "apply": "Être vérifié"
   },
   "project": {
     "about": "À propos de ce Projet",

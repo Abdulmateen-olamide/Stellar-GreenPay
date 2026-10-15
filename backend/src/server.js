@@ -8,7 +8,6 @@ const express = require("express");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 const http = require("http");
-const rateLimit = require("express-rate-limit");
 const logger = require("./logger");
 const requestLogger = require("./middleware/requestLogger");
 const { Server } = require("socket.io");
@@ -29,20 +28,7 @@ const projectsRouter = require("./routes/projects");
 const uploadsRouter = require("./routes/uploads");
 const donationsRouter = require("./routes/donations");
 const statsRouter = require("./routes/stats");
-const certificateRouter = require("./routes/certificate");
-const extensionRouter = require("./routes/extension");
-const mobileRouter = require("./routes/mobile");
-const priceRouter = require("./routes/price");
-const profilesRouter = require("./routes/profiles");
-const leaderboardRouter = require("./routes/leaderboard");
 const adminRouter = require("./routes/admin");
-const updatesRouter = require("./routes/updates");
-const jobsRouter = require("./routes/jobs");
-const notificationsRouter = require("./routes/notifications");
-const verificationRouter = require("./routes/verification");
-const webhooksRouter = require("./routes/webhooks");
-const healthRouter = require("./routes/health");
-const readinessRouter = require("./routes/readiness");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -50,6 +36,35 @@ const server = http.createServer(app);
 
 // Sentry initialization (must be added before other middleware)
 initSentry(app);
+
+// ── Security & CSP (Helmet) ──────────────────────────────────────────────────
+const apiHelmet = helmet({
+  contentSecurityPolicy: {
+    useDefaults: false,
+    directives: {
+      defaultSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+    },
+  },
+});
+
+const docsHelmet = helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:"],
+    },
+  },
+});
+
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV !== "production" && req.path.startsWith("/api/docs")) {
+    return docsHelmet(req, res, next);
+  }
+  return apiHelmet(req, res, next);
+});
 
 // ── Swagger UI (development) ─────────────────────────────────────────────────
 if (process.env.NODE_ENV !== "production") {
@@ -79,11 +94,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(helmet());
-app.use((req, res, next) => {
-  res.setHeader("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'");
-  next();
-});
 app.use(requestLogger);
 app.use(express.json({ limit: "20kb" }));
 app.use(cookieParser());
@@ -98,15 +108,14 @@ app.use(createSelectiveCsrf({
   ignoreMethods: ["GET", "HEAD", "OPTIONS"],
 }));
 
+const healthRouter = require("./routes/health");
+const readinessRouter = require("./routes/readiness");
 app.get("/metrics", metricsHandler);
 app.get("/api/metrics", metricsHandler);
 app.use("/health", healthRouter);
 app.use("/api/health", healthRouter);
 app.use("/api/v1/health", healthRouter);
 app.use("/api/readiness", readinessRouter);
-app.use("/api/v1/readiness", readinessRouter);
-
-// ── API Routes (mounted on /api and /api/v1) ──────────────────────────────────
 app.use("/api/projects", projectsRouter);
 app.use("/api/v1/projects", projectsRouter);
 app.use("/api/uploads", uploadsRouter);
@@ -115,32 +124,6 @@ app.use("/api/donations", donationsRouter);
 app.use("/api/v1/donations", donationsRouter);
 app.use("/api/stats", statsRouter);
 app.use("/api/v1/stats", statsRouter);
-app.use("/api/profiles", profilesRouter);
-app.use("/api/v1/profiles", profilesRouter);
-app.use("/api/leaderboard", leaderboardRouter);
-app.use("/api/v1/leaderboard", leaderboardRouter);
-app.use("/api/admin", adminRouter);
-app.use("/api/v1/admin", adminRouter);
-app.use("/api/updates", updatesRouter);
-app.use("/api/v1/updates", updatesRouter);
-app.use("/api/jobs", jobsRouter);
-app.use("/api/v1/jobs", jobsRouter);
-app.use("/api/notifications", notificationsRouter);
-app.use("/api/v1/notifications", notificationsRouter);
-app.use("/api/verification-requests", verificationRouter);
-app.use("/api/v1/verification-requests", verificationRouter);
-app.use("/api/webhooks", webhooksRouter);
-app.use("/api/v1/webhooks", webhooksRouter);
-
-// ── Companion extension & mobile client routers (CSRF-exempt) ────────────────
-app.use("/api/extension", extensionRouter);
-app.use("/api/v1/extension", extensionRouter);
-app.use("/api/mobile", mobileRouter);
-app.use("/api/v1/mobile", mobileRouter);
-
-// ── Live Stellar DEX price feed ──────────────────────────────────────────────
-app.use("/api/price", priceRouter);
-app.use("/api/v1/price", priceRouter);
 
 const origins = getAllowedOrigins();
 app.use(...createCorsMiddleware(origins));
@@ -172,8 +155,6 @@ app.use("/api/subscriptions", require("./routes/subscriptions"));
 app.use("/api/v1/subscriptions", require("./routes/subscriptions"));
 app.use("/api/referrals", require("./routes/referrals"));
 app.use("/api/v1/referrals", require("./routes/referrals"));
-app.use("/api/impact/certificate", certificateRouter);
-app.use("/api/v1/impact/certificate", certificateRouter);
 // Recurring donation schedules are the source of truth for mobile (#1059):
 // the app reads them from here and treats AsyncStorage as an offline cache.
 app.use("/api/recurring-donations", require("./routes/recurringDonations"));
@@ -187,6 +168,9 @@ app.use("/api/v1/ratings", require("./routes/ratings"));
 // Team giving (corporate/group donation profiles).
 app.use("/api/teams", require("./routes/teams"));
 app.use("/api/v1/teams", require("./routes/teams"));
+// Admin dashboard, audit log and moderation endpoints (dual-prefix like projects/donations).
+app.use("/api/admin", adminRouter);
+app.use("/api/v1/admin", adminRouter);
 app.use((req, res) => res.status(404).json({ error: `${req.method} ${req.path} not found` }));
 // Sentry error handler — capture exceptions before the final error middleware
 app.use(sentryErrorMiddleware());
