@@ -58,6 +58,12 @@ jobs:
 
       - run: npm run build
 
+      - name: Install Chromium for extension E2E
+        run: npx playwright install --with-deps chromium
+
+      - name: Run extension E2E suite
+        run: npm run test:e2e
+
       - name: Validate Manifest V3 browser actions
         run: |
           node - <<'NODE'
