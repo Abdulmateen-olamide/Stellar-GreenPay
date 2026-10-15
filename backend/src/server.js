@@ -26,7 +26,6 @@ const projectsRouter = require("./routes/projects");
 const uploadsRouter = require("./routes/uploads");
 const donationsRouter = require("./routes/donations");
 const statsRouter = require("./routes/stats");
-const certificateRouter = require("./routes/certificate");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -130,8 +129,6 @@ app.use("/api/subscriptions", require("./routes/subscriptions"));
 app.use("/api/v1/subscriptions", require("./routes/subscriptions"));
 app.use("/api/referrals", require("./routes/referrals"));
 app.use("/api/v1/referrals", require("./routes/referrals"));
-app.use("/api/impact/certificate", certificateRouter);
-app.use("/api/v1/impact/certificate", certificateRouter);
 // Recurring donation schedules are the source of truth for mobile (#1059):
 // the app reads them from here and treats AsyncStorage as an offline cache.
 app.use("/api/recurring-donations", require("./routes/recurringDonations"));

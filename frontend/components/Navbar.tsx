@@ -7,7 +7,7 @@ import { useRouter } from "next/router";
 import { fetchUnreadNotificationCount } from "@/lib/api";
 import { shortenAddress } from "@/utils/format";
 import { useI18n } from "@/lib/i18n";
-import { useTheme } from "@/lib/themeContext";
+import { useTheme } from "@/lib/theme";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import ThemeToggle from "@/components/ThemeToggle";
 import clsx from "clsx";
@@ -21,7 +21,7 @@ interface NavbarProps {
 export default function Navbar({ publicKey, onConnect, onDisconnect }: NavbarProps) {
   const router = useRouter();
   const { t } = useI18n();
-  const { theme, toggleTheme } = useTheme();
+  const { effective, toggleTheme } = useTheme();
   const network = (process.env.NEXT_PUBLIC_STELLAR_NETWORK || "testnet").toLowerCase();
   const isMainnet = network === "mainnet";
   const [unreadCount, setUnreadCount] = useState(0);

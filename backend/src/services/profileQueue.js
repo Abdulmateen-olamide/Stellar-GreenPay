@@ -330,7 +330,7 @@ async function enqueueAvatarProcessing(donorAddress, avatarUrl) {
 
 module.exports = {
   start,
-  enqueueProfileUpdate,
+  enqueueProfileUpdate: _enqueueProfileUpdateImpl,
   processProfileUpdate,
   enqueueAvatarProcessing,
   processAvatar,

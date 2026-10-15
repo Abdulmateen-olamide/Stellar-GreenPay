@@ -379,3 +379,95 @@ describe("THEME_INIT_SCRIPT (pre-paint, runs before React)", () => {
     }
   });
 });
+
+/**
+ * Acceptance-criterion test (issue #1559):
+ * "Toggle test covers DOM class and context value."
+ *
+ * Verifies that a single `toggleTheme()` call atomically updates:
+ *   1. The `.dark` class on `document.documentElement` (DOM), AND
+ *   2. The `effective` value exposed to all subscribers via the context.
+ *
+ * A second toggle verifies the reverse transition is equally consistent,
+ * confirming there is no moment where the DOM and the context disagree.
+ */
+describe("toggleTheme — DOM class and subscriber context stay in sync", () => {
+  beforeEach(() => {
+    window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+      matches: false, // OS prefers light
+      media: query,
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    }));
+  });
+
+  it("toggling light→dark updates the DOM .dark class AND the context effective value simultaneously", () => {
+    render(
+      <ThemeProvider>
+        <ExportProbe />
+      </ThemeProvider>,
+    );
+
+    // Precondition: starts light (system + light OS preference).
+    expect(screen.getByTestId("effective").textContent).toBe("light");
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
+
+    // Toggle to dark.
+    act(() => {
+      fireEvent.click(screen.getByTestId("toggle"));
+    });
+
+    // Both the context subscriber value AND the DOM class must be dark.
+    expect(screen.getByTestId("effective").textContent).toBe("dark");
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+  });
+
+  it("toggling dark→light removes the DOM .dark class AND updates the context effective value simultaneously", () => {
+    // Pre-store dark so the provider hydrates into dark.
+    localStorage.setItem(THEME_STORAGE_KEY, "dark");
+
+    render(
+      <ThemeProvider>
+        <ExportProbe />
+      </ThemeProvider>,
+    );
+
+    // Precondition: starts dark.
+    expect(screen.getByTestId("effective").textContent).toBe("dark");
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+
+    // Toggle back to light.
+    act(() => {
+      fireEvent.click(screen.getByTestId("toggle"));
+    });
+
+    // Both the context subscriber value AND the DOM class must be light.
+    expect(screen.getByTestId("effective").textContent).toBe("light");
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
+  });
+
+  it("two consecutive toggles leave DOM class and context effective in perfect sync at each step", () => {
+    render(
+      <ThemeProvider>
+        <ExportProbe />
+      </ThemeProvider>,
+    );
+
+    // Step 1: light → dark.
+    act(() => {
+      fireEvent.click(screen.getByTestId("toggle"));
+    });
+    expect(screen.getByTestId("effective").textContent).toBe("dark");
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+
+    // Step 2: dark → light.
+    act(() => {
+      fireEvent.click(screen.getByTestId("toggle"));
+    });
+    expect(screen.getByTestId("effective").textContent).toBe("light");
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
+  });
+});
