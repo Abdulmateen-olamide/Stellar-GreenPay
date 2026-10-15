@@ -22,6 +22,8 @@ const { isStellarTimeoutError } = require("./services/stellar");
 const { createCorsMiddleware, getAllowedOrigins } = require("./middleware/corsPolicy");
 const { createRateLimiter } = require("./middleware/rateLimiter");
 const { metricsHandler, countRequest, startQueueRefresh } = require("./services/metrics");
+const { createSelectiveCsrf } = require("./middleware/selectiveCsrf");
+
 const projectsRouter = require("./routes/projects");
 const uploadsRouter = require("./routes/uploads");
 const donationsRouter = require("./routes/donations");
@@ -96,7 +98,6 @@ app.use(requestLogger);
 app.use(express.json({ limit: "20kb" }));
 app.use(cookieParser());
 
-const { createSelectiveCsrf } = require("./middleware/selectiveCsrf");
 app.use(createSelectiveCsrf({
   cookie: {
     httpOnly: true,
@@ -113,14 +114,13 @@ app.get("/metrics", metricsHandler);
 app.get("/api/metrics", metricsHandler);
 app.use("/health", healthRouter);
 app.use("/api/health", healthRouter);
-
 app.use("/api/v1/health", healthRouter);
 app.use("/api/readiness", readinessRouter);
 app.use("/api/projects", projectsRouter);
-app.use("/api/uploads", uploadsRouter);
-app.use("/api/donations", donationsRouter);
 app.use("/api/v1/projects", projectsRouter);
+app.use("/api/uploads", uploadsRouter);
 app.use("/api/v1/uploads", uploadsRouter);
+app.use("/api/donations", donationsRouter);
 app.use("/api/v1/donations", donationsRouter);
 app.use("/api/stats", statsRouter);
 app.use("/api/v1/stats", statsRouter);
@@ -150,6 +150,7 @@ app.get("/api/csrf-token", csrfTokenHandler);
 app.get("/api/v1/csrf-token", csrfTokenHandler);
 
 app.use("/api/impact", require("./routes/impact"));
+app.use("/api/v1/impact", require("./routes/impact"));
 app.use("/api/subscriptions", require("./routes/subscriptions"));
 app.use("/api/v1/subscriptions", require("./routes/subscriptions"));
 app.use("/api/referrals", require("./routes/referrals"));
