@@ -30,6 +30,7 @@ import {
   fetchProjectReviews,
 } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { renderMarkdown } from "@/lib/renderMarkdown";
 import { formatAmount, formatDate, formatXLM, formatCO2, progressPercent, timeAgo, statusClass, statusLabel, CATEGORY_ICONS, copyToClipboard, shortenAddress } from "@/utils/format";
 import { accountUrl, fetchProjectDiscussion, type ProjectDiscussionMessage } from "@/lib/stellar";
 import { markMonthlySubscriptionPaid } from "@/lib/monthlyGiving";
