@@ -12,6 +12,54 @@
  *  5. Unit-level tests for the isCsrfExempt helper
  */
 
+// Mock the ESM-only dependencies and their route modules (same pattern as
+// profiles.test.js) so requiring the exported app stays a CommonJS load.
+// These tests only exercise the selective-CSRF middleware, which runs before
+// any router, so the pass-through mocks do not change their behaviour.
+jest.mock("../db/pool", () => ({ query: jest.fn() }));
+jest.mock("../services/sentry", () => ({
+  initSentry: jest.fn(),
+  errorHandler: () => (err, _req, _res, next) => next(err),
+}));
+jest.mock("../services/profileQueue", () => ({
+  start: jest.fn(),
+  enqueueAvatarProcessing: jest.fn().mockResolvedValue(undefined),
+}));
+jest.mock("../services/summaryQueue", () => ({ start: jest.fn() }));
+jest.mock("../services/statsRefreshQueue", () => ({ start: jest.fn() }));
+jest.mock("../services/indexerService", () => ({ startIndexer: jest.fn() }));
+jest.mock("../services/socketHandler", () => ({ registerSocketHandlers: jest.fn() }));
+jest.mock("../db/migrate", () => ({ runMigrations: jest.fn() }));
+jest.mock("../services/turrets", () => ({ startTurretsServer: jest.fn() }));
+jest.mock("../services/stellar", () => ({
+  isStellarTimeoutError: jest.fn(() => false),
+  server: {},
+}));
+jest.mock("../services/metrics", () => ({
+  metricsHandler: (_req, res) => res.end(),
+  countRequest: jest.fn(),
+  startQueueRefresh: jest.fn(),
+}));
+jest.mock("../middleware/rateLimiter", () => ({
+  createRateLimiter: () => (req, res, next) => next(),
+}));
+
+const mockPassThroughRouter = (_req, _res, next) => next();
+jest.mock("../routes/projects", () => mockPassThroughRouter);
+jest.mock("../routes/uploads", () => mockPassThroughRouter);
+jest.mock("../routes/donations", () => mockPassThroughRouter);
+jest.mock("../routes/stats", () => mockPassThroughRouter);
+jest.mock("../routes/health", () => mockPassThroughRouter);
+jest.mock("../routes/readiness", () => mockPassThroughRouter);
+jest.mock("../routes/impact", () => mockPassThroughRouter);
+jest.mock("../routes/subscriptions", () => mockPassThroughRouter);
+jest.mock("../routes/referrals", () => mockPassThroughRouter);
+jest.mock("../routes/recurringDonations", () => mockPassThroughRouter);
+jest.mock("../routes/auth", () => mockPassThroughRouter);
+jest.mock("../routes/ratings", () => mockPassThroughRouter);
+jest.mock("../routes/teams", () => mockPassThroughRouter);
+jest.mock("../routes/admin", () => mockPassThroughRouter);
+
 const request = require("supertest");
 const app = require("../server");
 const { isCsrfExempt } = require("../middleware/selectiveCsrf");
@@ -31,6 +79,8 @@ describe("isCsrfExempt()", () => {
     ["/api/health", true],
     ["/api/v1/health", true],
     ["/api/readiness", true],
+    ["/metrics", true],
+    ["/api/metrics", true],
     ["/api/donations", false],
     ["/api/v1/projects", false],
     ["/api/ratings", false],

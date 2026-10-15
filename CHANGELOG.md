@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The selective CSRF middleware now also exempts `/metrics` and `/api/metrics`, completing the health/readiness/metrics/notifications exemption set that the removed `server.js` `csrfProtection` block used to list; added regression tests for every exempt path plus a guard that `server.js` wires `createSelectiveCsrf` and no longer references the undefined `csrfProtection` helper (#1524).
 - Mounted the admin router at `/api/admin` and `/api/v1/admin` and restored the admin route imports (`uuid`, `logAdminAction`, `mapDonationRow`) dropped during a bad merge, so the admin dashboard, audit-log and moderation endpoints no longer 404 (#1526).
 - Horizon and Soroban RPC calls had no timeout, so a stalled Stellar node could pin an API worker indefinitely; a chain timeout is now answered with 503 Service Unavailable (#1097).
 - Removed duplicate `defaults` key in backend CI workflow (`backend.yml`) and updated `moduleResolution` to `bundler` with `ES2020` in backend `tsconfig.json`.
