@@ -177,9 +177,9 @@ app.use(sentryErrorMiddleware());
 
 app.use((err, req, res, next) => {
   void next;
-  console.error("[Error]", err.message);
   const isTimeout = isStellarTimeoutError(err);
   const status = isTimeout ? 503 : err.status || 500;
+  logger.error({ err, event: "request_error", path: req.path, status }, err.message);
   if (!res.__metricsCounted) {
     res.__metricsCounted = true;
     countRequest(req, { ...res, statusCode: status });
