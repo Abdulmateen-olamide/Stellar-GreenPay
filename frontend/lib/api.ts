@@ -893,6 +893,35 @@ export async function fetchUnreadNotificationCount({
   return data.unreadCount;
 }
 
+export interface NotificationPreferences {
+  projectUpdates: boolean;
+  donations: boolean;
+  milestones: boolean;
+}
+
+const NOTIFICATION_PREFS_KEY = "greenpay:notification:preferences";
+
+const defaultPreferences: NotificationPreferences = {
+  projectUpdates: true,
+  donations: true,
+  milestones: true,
+};
+
+export function loadNotificationPreferences(): NotificationPreferences {
+  if (typeof window === "undefined") return { ...defaultPreferences };
+  try {
+    const stored = localStorage.getItem(NOTIFICATION_PREFS_KEY);
+    if (!stored) return { ...defaultPreferences };
+    return { ...defaultPreferences, ...JSON.parse(stored) };
+  } catch {
+    return { ...defaultPreferences };
+  }
+}
+
+export function saveNotificationPreferences(prefs: NotificationPreferences): void {
+  localStorage.setItem(NOTIFICATION_PREFS_KEY, JSON.stringify(prefs));
+}
+
 // ── Update Likes ─────────────────────────────────────────────────
 export async function toggleUpdateLike(updateId: string, donorAddress: string) {
   const { data } = await api.post<{ success: boolean; data: { liked: boolean; likeCount: number } }>(
