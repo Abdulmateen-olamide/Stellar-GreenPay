@@ -26,12 +26,23 @@ const csurf = require("csurf");
  */
 const EXEMPT_PREFIXES = [
   "/api/mobile/",
+  "/api/v1/mobile/",
   "/api/extension/",
+  "/api/v1/extension/",
   "/api/notifications",
   "/api/v1/notifications",
 ];
 
-const EXEMPT_EXACT = new Set(["/health", "/api/health", "/api/v1/health", "/api/readiness"]);
+const EXEMPT_EXACT = new Set([
+  "/health",
+  "/api/health",
+  "/api/v1/health",
+  "/api/readiness",
+  "/api/mobile",
+  "/api/v1/mobile",
+  "/api/extension",
+  "/api/v1/extension",
+]);
 
 /**
  * Returns true when the given request path should skip CSRF enforcement.

@@ -13,20 +13,16 @@ const router  = express.Router();
 const { getUsdcToXlmRate, FALLBACK_XLM_PER_USDC } = require("../services/priceOracle");
 const cache = require("../services/cache");
 
-/**
- * GET /api/price/xlm-usdc
- *
- * Returns the current USDC → XLM mid-price sourced from the Stellar DEX
- * Horizon orderbook. The price is cached for 30 seconds.
- */
-router.get("/xlm-usdc", async (req, res, next) => {
+async function handlePrice(req, res, next) {
   try {
     const cached = cache.get("xlm_usdc_mid_price");
     const xlmPerUsdc = await getUsdcToXlmRate();
+    const usdPerXlm = xlmPerUsdc > 0 ? 1 / xlmPerUsdc : null;
     res.json({
       success: true,
       data: {
         xlmPerUsdc,
+        usdPerXlm,
         cached: cached !== null,
         fallback: xlmPerUsdc === FALLBACK_XLM_PER_USDC,
       },
@@ -34,6 +30,9 @@ router.get("/xlm-usdc", async (req, res, next) => {
   } catch (e) {
     next(e);
   }
-});
+}
+
+router.get("/xlm-usdc", handlePrice);
+router.get("/", handlePrice);
 
 module.exports = router;

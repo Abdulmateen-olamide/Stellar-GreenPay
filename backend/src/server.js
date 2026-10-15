@@ -8,10 +8,6 @@ const express = require("express");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 const http = require("http");
-const express = require("express");
-const helmet = require("helmet");
-const cookieParser = require("cookie-parser");
-const csurf = require("csurf");
 const rateLimit = require("express-rate-limit");
 const logger = require("./logger");
 const requestLogger = require("./middleware/requestLogger");
@@ -24,16 +20,29 @@ const { start: startProfileQueue } = require("./services/profileQueue");
 const { start: startStatsRefreshQueue } = require("./services/statsRefreshQueue");
 const { startIndexer } = require("./services/indexerService");
 const { isStellarTimeoutError } = require("./services/stellar");
-const logger = require("./logger");
-const requestLogger = require("./middleware/requestLogger");
 const { createCorsMiddleware, getAllowedOrigins } = require("./middleware/corsPolicy");
 const { createRateLimiter } = require("./middleware/rateLimiter");
 const { metricsHandler, countRequest, startQueueRefresh } = require("./services/metrics");
+const { createSelectiveCsrf } = require("./middleware/selectiveCsrf");
+
 const projectsRouter = require("./routes/projects");
 const uploadsRouter = require("./routes/uploads");
 const donationsRouter = require("./routes/donations");
 const statsRouter = require("./routes/stats");
 const certificateRouter = require("./routes/certificate");
+const extensionRouter = require("./routes/extension");
+const mobileRouter = require("./routes/mobile");
+const priceRouter = require("./routes/price");
+const profilesRouter = require("./routes/profiles");
+const leaderboardRouter = require("./routes/leaderboard");
+const adminRouter = require("./routes/admin");
+const updatesRouter = require("./routes/updates");
+const jobsRouter = require("./routes/jobs");
+const notificationsRouter = require("./routes/notifications");
+const verificationRouter = require("./routes/verification");
+const webhooksRouter = require("./routes/webhooks");
+const healthRouter = require("./routes/health");
+const readinessRouter = require("./routes/readiness");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -79,7 +88,6 @@ app.use(requestLogger);
 app.use(express.json({ limit: "20kb" }));
 app.use(cookieParser());
 
-const { createSelectiveCsrf } = require("./middleware/selectiveCsrf");
 app.use(createSelectiveCsrf({
   cookie: {
     httpOnly: true,
@@ -88,47 +96,51 @@ app.use(createSelectiveCsrf({
     path: "/",
   },
   ignoreMethods: ["GET", "HEAD", "OPTIONS"],
- fix/csrf-mobile-extension-clients
 }));
 
-});
-app.use((req, res, next) => {
-  if (
-    req.path.startsWith("/api/notifications") ||
-    req.path.startsWith("/api/v1/notifications") ||
-    req.path === "/health" ||
-    req.path === "/api/health" ||
-    req.path === "/api/v1/health" ||
-    req.path === "/api/readiness" ||
-    req.path === "/metrics" ||
-    req.path === "/api/metrics"
-  ) {
-    return next();
-  }
-  return csrfProtection(req, res, next);
-});
- main
-
-const healthRouter = require("./routes/health");
-const readinessRouter = require("./routes/readiness");
 app.get("/metrics", metricsHandler);
 app.get("/api/metrics", metricsHandler);
 app.use("/health", healthRouter);
 app.use("/api/health", healthRouter);
-
 app.use("/api/v1/health", healthRouter);
 app.use("/api/readiness", readinessRouter);
-const donationsRouter = require("./routes/donations");
-const adminRouter = require("./routes/admin");
+app.use("/api/v1/readiness", readinessRouter);
+
+// ── API Routes (mounted on /api and /api/v1) ──────────────────────────────────
 app.use("/api/projects", projectsRouter);
-app.use("/api/uploads", uploadsRouter);
-app.use("/api/donations", donationsRouter);
 app.use("/api/v1/projects", projectsRouter);
+app.use("/api/uploads", uploadsRouter);
 app.use("/api/v1/uploads", uploadsRouter);
+app.use("/api/donations", donationsRouter);
 app.use("/api/v1/donations", donationsRouter);
 app.use("/api/stats", statsRouter);
 app.use("/api/v1/stats", statsRouter);
-main
+app.use("/api/profiles", profilesRouter);
+app.use("/api/v1/profiles", profilesRouter);
+app.use("/api/leaderboard", leaderboardRouter);
+app.use("/api/v1/leaderboard", leaderboardRouter);
+app.use("/api/admin", adminRouter);
+app.use("/api/v1/admin", adminRouter);
+app.use("/api/updates", updatesRouter);
+app.use("/api/v1/updates", updatesRouter);
+app.use("/api/jobs", jobsRouter);
+app.use("/api/v1/jobs", jobsRouter);
+app.use("/api/notifications", notificationsRouter);
+app.use("/api/v1/notifications", notificationsRouter);
+app.use("/api/verification-requests", verificationRouter);
+app.use("/api/v1/verification-requests", verificationRouter);
+app.use("/api/webhooks", webhooksRouter);
+app.use("/api/v1/webhooks", webhooksRouter);
+
+// ── Companion extension & mobile client routers (CSRF-exempt) ────────────────
+app.use("/api/extension", extensionRouter);
+app.use("/api/v1/extension", extensionRouter);
+app.use("/api/mobile", mobileRouter);
+app.use("/api/v1/mobile", mobileRouter);
+
+// ── Live Stellar DEX price feed ──────────────────────────────────────────────
+app.use("/api/price", priceRouter);
+app.use("/api/v1/price", priceRouter);
 
 const origins = getAllowedOrigins();
 app.use(...createCorsMiddleware(origins));
@@ -155,6 +167,7 @@ app.get("/api/csrf-token", csrfTokenHandler);
 app.get("/api/v1/csrf-token", csrfTokenHandler);
 
 app.use("/api/impact", require("./routes/impact"));
+app.use("/api/v1/impact", require("./routes/impact"));
 app.use("/api/subscriptions", require("./routes/subscriptions"));
 app.use("/api/v1/subscriptions", require("./routes/subscriptions"));
 app.use("/api/referrals", require("./routes/referrals"));

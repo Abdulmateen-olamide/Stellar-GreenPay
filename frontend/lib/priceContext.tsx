@@ -15,23 +15,45 @@ export function PriceProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const controller = new AbortController();
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "";
+    const backendPriceUrl = apiBase ? `${apiBase}/api/v1/price/xlm-usdc` : "/api/v1/price/xlm-usdc";
 
-    fetch(
-      "https://api.coingecko.com/api/v3/simple/price?ids=stellar&vs_currencies=usd",
-      { signal: controller.signal },
-    )
+    fetch(backendPriceUrl, { signal: controller.signal })
       .then((res) => {
-        if (!res.ok) return;
+        if (!res.ok) throw new Error(`Backend price returned ${res.status}`);
         return res.json();
       })
       .then((data) => {
-        const price = data?.stellar?.usd;
-        if (typeof price === "number" && price > 0) {
-          setXlmUsd(price);
+        const rate =
+          data?.data?.usdPerXlm ??
+          (typeof data?.data?.xlmPerUsdc === "number" && data.data.xlmPerUsdc > 0
+            ? 1 / data.data.xlmPerUsdc
+            : null);
+        if (typeof rate === "number" && rate > 0) {
+          setXlmUsd(rate);
+        } else {
+          throw new Error("Invalid rate payload");
         }
       })
       .catch(() => {
-        // Fail silently — USD equivalents simply won't render
+        // Fallback to CoinGecko free API if backend price oracle is unavailable
+        fetch(
+          "https://api.coingecko.com/api/v3/simple/price?ids=stellar&vs_currencies=usd",
+          { signal: controller.signal },
+        )
+          .then((res) => {
+            if (!res.ok) return;
+            return res.json();
+          })
+          .then((data) => {
+            const price = data?.stellar?.usd;
+            if (typeof price === "number" && price > 0) {
+              setXlmUsd(price);
+            }
+          })
+          .catch(() => {
+            // Fail silently — USD equivalents simply won't render
+          });
       });
 
     return () => controller.abort();
