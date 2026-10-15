@@ -10,21 +10,27 @@
 
 const express = require("express");
 const router  = express.Router();
-const { getUsdcToXlmRate, FALLBACK_XLM_PER_USDC } = require("../services/priceOracle");
-const cache = require("../services/cache");
+const { getFiatRates, SUPPORTED_FIAT } = require("../services/priceOracle");
 
 async function handlePrice(req, res, next) {
   try {
-    const cached = cache.get("xlm_usdc_mid_price");
-    const xlmPerUsdc = await getUsdcToXlmRate();
-    const usdPerXlm = xlmPerUsdc > 0 ? 1 / xlmPerUsdc : null;
+    const fiatData = await getFiatRates();
+    const queryCur = typeof req.query.currency === "string" ? req.query.currency.toUpperCase() : null;
+    const currency = (queryCur && SUPPORTED_FIAT.includes(queryCur)) ? queryCur : "USD";
+    const rate = fiatData.rates[currency] ?? fiatData.rates.USD;
+
     res.json({
       success: true,
       data: {
-        xlmPerUsdc,
-        usdPerXlm,
-        cached: cached !== null,
-        fallback: xlmPerUsdc === FALLBACK_XLM_PER_USDC,
+        xlmPerUsdc: fiatData.xlmPerUsdc,
+        usdPerXlm: fiatData.rates.USD,
+        rates: fiatData.rates,
+        rate,
+        currency,
+        cached: fiatData.cached,
+        isStale: fiatData.isStale,
+        fallback: fiatData.fallback,
+        timestamp: fiatData.timestamp,
       },
     });
   } catch (e) {
@@ -33,6 +39,7 @@ async function handlePrice(req, res, next) {
 }
 
 router.get("/xlm-usdc", handlePrice);
+router.get("/rates", handlePrice);
 router.get("/", handlePrice);
 
 module.exports = router;

@@ -168,6 +168,9 @@ app.use("/api/v1/ratings", require("./routes/ratings"));
 // Team giving (corporate/group donation profiles).
 app.use("/api/teams", require("./routes/teams"));
 app.use("/api/v1/teams", require("./routes/teams"));
+// Price oracle endpoints (rates in USD, EUR, BRL)
+app.use("/api/price", require("./routes/price"));
+app.use("/api/v1/price", require("./routes/price"));
 // Admin dashboard, audit log and moderation endpoints (dual-prefix like projects/donations).
 app.use("/api/admin", adminRouter);
 app.use("/api/v1/admin", adminRouter);
