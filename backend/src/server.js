@@ -30,6 +30,7 @@ const donationsRouter = require("./routes/donations");
 const statsRouter = require("./routes/stats");
 const adminRouter = require("./routes/admin");
 const notificationsRouter = require("./routes/notifications");
+const leaderboardRouter = require("./routes/leaderboard");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -131,6 +132,8 @@ app.use("/api/stats", statsRouter);
 app.use("/api/v1/stats", statsRouter);
 app.use("/api/notifications", notificationsRouter);
 app.use("/api/v1/notifications", notificationsRouter);
+app.use("/api/leaderboard", leaderboardRouter);
+app.use("/api/v1/leaderboard", leaderboardRouter);
 
 const origins = getAllowedOrigins();
 app.use(...createCorsMiddleware(origins));

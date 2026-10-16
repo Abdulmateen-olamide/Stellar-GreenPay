@@ -22,8 +22,12 @@ const STELLAR_TIMEOUT_MS = Number.parseInt(process.env.STELLAR_TIMEOUT_MS, 10) |
 // Soroban RPC each talk through their own module-level axios instance, so each
 // has to be bounded explicitly.
 Config.setTimeout(STELLAR_TIMEOUT_MS);
-Horizon.AxiosClient.defaults.timeout = STELLAR_TIMEOUT_MS;
-rpc.AxiosClient.defaults.timeout = STELLAR_TIMEOUT_MS;
+if (Horizon.AxiosClient && Horizon.AxiosClient.defaults) {
+  Horizon.AxiosClient.defaults.timeout = STELLAR_TIMEOUT_MS;
+}
+if (rpc.AxiosClient && rpc.AxiosClient.defaults) {
+  rpc.AxiosClient.defaults.timeout = STELLAR_TIMEOUT_MS;
+}
 
 /**
  * True when `err` is an aborted/expired outbound request rather than a genuine
