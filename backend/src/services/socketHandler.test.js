@@ -32,6 +32,7 @@ describe("registerSocketHandlers", () => {
       "leave_project",
       "join_global_feed",
       "leave_global_feed",
+      "disconnect",
     ]);
   });
 
