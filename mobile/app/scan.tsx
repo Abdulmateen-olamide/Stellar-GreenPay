@@ -5,6 +5,12 @@
  *
  * QR format expected: a Stellar public key (G…) or a deep-link of the form
  *   greenpay://donate?wallet=G...&project=<projectId>
+ *
+ * Scanning goes through expo-camera's `CameraView` (`onBarcodeScanned` +
+ * `barcodeScannerSettings`) — the deprecated `expo-barcode-scanner` package is
+ * no longer used. Wallet validation is delegated to
+ * `utils/stellarValidation.ts` and repeat frames are suppressed by
+ * `utils/scanThrottle.ts`.
  */
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -18,11 +24,16 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useTheme } from './theme';
-import { StrKey } from '@stellar/stellar-sdk';
+import type { BarcodeType } from 'expo-camera';
+import { useThemeOrDefault } from './theme';
+import { isValidStellarAddress } from '../utils/stellarValidation';
 import { createScanGate } from '../utils/scanThrottle';
 
 const DEEP_LINK_RE   = /greenpay:\/\/donate\?(.+)/;
+
+// QR codes only — the expo-camera equivalent of the old
+// `barCodeTypes: [BarCodeScanner.Constants.BarCodeType.qr]`.
+const QR_BARCODE_SETTINGS = { barcodeTypes: ['qr'] as BarcodeType[] };
 
 export const INVALID_QR_MESSAGE = 'This QR code is not a valid GreenPay wallet address. Try again.';
 
@@ -31,13 +42,13 @@ export function parseScan(data: string): { wallet: string; projectId?: string } 
   if (deepMatch) {
     const params = new URLSearchParams(deepMatch[1]);
     const wallet = (params.get('wallet') ?? '').trim();
-    if (wallet && StrKey.isValidEd25519PublicKey(wallet)) {
+    if (wallet && isValidStellarAddress(wallet)) {
       return { wallet, projectId: params.get('project') ?? undefined };
     }
     return null;
   }
   const candidate = data.trim();
-  if (candidate && StrKey.isValidEd25519PublicKey(candidate)) {
+  if (candidate && isValidStellarAddress(candidate)) {
     return { wallet: candidate };
   }
   return null;
@@ -45,7 +56,7 @@ export function parseScan(data: string): { wallet: string; projectId?: string } 
 
 export default function ScanScreen() {
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors } = useThemeOrDefault();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -142,16 +153,32 @@ export default function ScanScreen() {
   if (cameraUnavailable && !manualEntry) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <Text style={[styles.message, { color: colors.text }]}>Camera access is required to scan QR codes.</Text>
+        <Text style={[styles.message, { color: colors.text }]}>
+          {permission.granted
+            ? 'Camera could not be started.'
+            : 'Camera access is required to scan QR codes.'}
+        </Text>
         <TouchableOpacity
           style={[styles.button, { backgroundColor: colors.buttonBackground }]}
-          onPress={requestPermission}
+          onPress={() => setManualEntry(true)}
           accessibilityRole="button"
-          accessibilityLabel="Grant camera permission"
-          accessibilityHint="Lets GreenPay use the camera to scan project QR codes"
+          accessibilityLabel="Type address manually"
+          accessibilityHint="Continue by typing the destination Stellar address yourself"
+          testID="manual-entry-link"
         >
-          <Text style={[styles.buttonText, { color: colors.buttonText }]}>Grant Permission</Text>
+          <Text style={[styles.buttonText, { color: colors.buttonText }]}>Type address manually</Text>
         </TouchableOpacity>
+        {!permission.granted && (
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: colors.buttonBackground }]}
+            onPress={requestPermission}
+            accessibilityRole="button"
+            accessibilityLabel="Grant camera permission"
+            accessibilityHint="Lets GreenPay use the camera to scan project QR codes"
+          >
+            <Text style={[styles.buttonText, { color: colors.buttonText }]}>Grant Permission</Text>
+          </TouchableOpacity>
+        )}
         {Platform.OS !== 'web' && (
           <TouchableOpacity
             style={[styles.button, styles.buttonSecondary, { backgroundColor: colors.secondaryText }]}
@@ -169,10 +196,10 @@ export default function ScanScreen() {
 
   if (manualEntry) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.message} accessibilityRole="header">Type address manually</Text>
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
+        <Text style={[styles.message, { color: colors.text }]} accessibilityRole="header">Type address manually</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, color: colors.text }]}
           value={manualValue}
           onChangeText={setManualValue}
           placeholder="Stellar address (G…)"
@@ -183,15 +210,15 @@ export default function ScanScreen() {
         />
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
         <TouchableOpacity
-          style={styles.button}
+          style={[styles.button, { backgroundColor: colors.buttonBackground }]}
           onPress={submitManual}
           accessibilityLabel="Continue with typed address"
           accessibilityRole="button"
         >
-          <Text style={styles.buttonText}>Continue</Text>
+          <Text style={[styles.buttonText, { color: colors.buttonText }]}>Continue</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.button, styles.buttonSecondary]}
+          style={[styles.button, styles.buttonSecondary, { backgroundColor: colors.secondaryText }]}
           onPress={() => {
             setManualEntry(false);
             setError(null);
@@ -199,7 +226,7 @@ export default function ScanScreen() {
           accessibilityLabel="Back to QR scanning"
           accessibilityRole="button"
         >
-          <Text style={styles.buttonText}>Back to QR scanning</Text>
+          <Text style={[styles.buttonText, { color: colors.buttonText }]}>Back to QR scanning</Text>
         </TouchableOpacity>
       </View>
     );
@@ -211,7 +238,7 @@ export default function ScanScreen() {
         style={StyleSheet.absoluteFillObject}
         facing="back"
         onBarcodeScanned={scanned ? undefined : handleBarcode}
-        barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+        barcodeScannerSettings={QR_BARCODE_SETTINGS}
         onMountError={() => setCameraFailed(true)}
       />
 
