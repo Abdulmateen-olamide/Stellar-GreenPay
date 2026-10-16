@@ -29,6 +29,7 @@ const uploadsRouter = require("./routes/uploads");
 const donationsRouter = require("./routes/donations");
 const statsRouter = require("./routes/stats");
 const adminRouter = require("./routes/admin");
+const notificationsRouter = require("./routes/notifications");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -128,6 +129,8 @@ app.use("/api/donations", donationsRouter);
 app.use("/api/v1/donations", donationsRouter);
 app.use("/api/stats", statsRouter);
 app.use("/api/v1/stats", statsRouter);
+app.use("/api/notifications", notificationsRouter);
+app.use("/api/v1/notifications", notificationsRouter);
 
 const origins = getAllowedOrigins();
 app.use(...createCorsMiddleware(origins));
