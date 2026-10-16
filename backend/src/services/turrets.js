@@ -253,9 +253,9 @@ async function generatePreSignedTransactions({
   const donationAmounts = [10, 25, 50, 100, 250];
   
   for (const donationAmount of donationAmounts) {
-    const matchAmount = Math.min(donationAmount * multiplier, capXlm);
+    const matchAmount = donationAmount * multiplier;
     
-    if (matchAmount <= 0) continue;
+    if (matchAmount <= 0 || matchAmount > capXlm) continue;
 
     try {
       const account = await getServer().loadAccount(matcherAddress);
