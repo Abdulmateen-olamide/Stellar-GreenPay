@@ -16,6 +16,7 @@ import DescriptionAccordion from "@/components/DescriptionAccordion";
 import WalletAddressQRCode from "@/components/WalletAddressQRCode";
 import ProjectProgressBar from "@/components/ProjectProgressBar";
 import ShareButtons from "@/components/ShareButtons";
+import ProjectComments from "@/components/ProjectComments";
 import {
   fetchProject,
   fetchProjectUpdates,
@@ -1443,6 +1444,9 @@ export default function ProjectDetail({
               </>
             )}
           </div>
+
+          {/* Donor discussion (#1662) */}
+          <ProjectComments projectId={project.id} publicKey={publicKey} />
 
           {/* Milestones */}
           {project.milestones && project.milestones.length > 0 && (

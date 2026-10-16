@@ -91,6 +91,17 @@ export interface DonationMatch {
 /**
  * A single donor review of a project.
  */
+/** A donor comment on a project page (GET /api/comments/project/:id). */
+export interface ProjectComment {
+  id: string;
+  projectId: string;
+  authorAddress: string;
+  authorDisplayName: string | null;
+  body: string;
+  moderationStatus: "approved" | "pending_review";
+  createdAt: string;
+}
+
 export interface ProjectReview {
   donorAddress: string;
   rating: number;

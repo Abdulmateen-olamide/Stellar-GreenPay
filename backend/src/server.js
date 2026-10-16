@@ -142,6 +142,9 @@ app.use("/api/v1/auth", require("./routes/auth"));
 // Project ratings (donor-submitted, wallet-authenticated).
 app.use("/api/ratings", require("./routes/ratings"));
 app.use("/api/v1/ratings", require("./routes/ratings"));
+// Donor comments on project pages (wallet-authenticated, moderated, rate limited).
+app.use("/api/comments", require("./routes/comments"));
+app.use("/api/v1/comments", require("./routes/comments"));
 // Team giving (corporate/group donation profiles).
 app.use("/api/teams", require("./routes/teams"));
 app.use("/api/v1/teams", require("./routes/teams"));
