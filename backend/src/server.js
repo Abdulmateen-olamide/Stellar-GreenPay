@@ -28,6 +28,7 @@ const projectsRouter = require("./routes/projects");
 const uploadsRouter = require("./routes/uploads");
 const donationsRouter = require("./routes/donations");
 const statsRouter = require("./routes/stats");
+const jobsRouter = require("./routes/jobs");
 const adminRouter = require("./routes/admin");
 
 const app = express();
@@ -126,6 +127,8 @@ app.use("/api/uploads", uploadsRouter);
 app.use("/api/v1/uploads", uploadsRouter);
 app.use("/api/donations", donationsRouter);
 app.use("/api/v1/donations", donationsRouter);
+app.use("/api/jobs", jobsRouter);
+app.use("/api/v1/jobs", jobsRouter);
 app.use("/api/stats", statsRouter);
 app.use("/api/v1/stats", statsRouter);
 
