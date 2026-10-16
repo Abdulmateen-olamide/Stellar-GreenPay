@@ -29,6 +29,7 @@ const uploadsRouter = require("./routes/uploads");
 const donationsRouter = require("./routes/donations");
 const statsRouter = require("./routes/stats");
 const adminRouter = require("./routes/admin");
+const certificateRouter = require("./routes/certificate");
 const notificationsRouter = require("./routes/notifications");
 
 const app = express();
@@ -156,6 +157,11 @@ function csrfTokenHandler(req, res) {
 app.get("/api/csrf-token", csrfTokenHandler);
 app.get("/api/v1/csrf-token", csrfTokenHandler);
 
+// Donation impact certificates (#1523). Mounted on the certificate sub-prefix
+// ahead of the impact router; it only owns /donation/:id, so the impact
+// router's public /certificate/:slug share endpoint keeps single-segment paths.
+app.use("/api/impact/certificate", certificateRouter);
+app.use("/api/v1/impact/certificate", certificateRouter);
 app.use("/api/impact", require("./routes/impact"));
 app.use("/api/v1/impact", require("./routes/impact"));
 app.use("/api/subscriptions", require("./routes/subscriptions"));
