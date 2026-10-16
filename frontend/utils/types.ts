@@ -38,6 +38,7 @@ export interface ClimateProject {
   preferredAsset?: { code: string; issuer: string } | null;
   goalXLM: string;             // fundraising goal
   raisedXLM: string;           // total raised so far
+  raisedUSDC?: string;
   donorCount: number;
   co2OffsetKg: number;         // estimated CO2 offset in kg
   co2_per_xlm?: number;        // CO2 offset per XLM donated
@@ -154,6 +155,8 @@ export interface Donation {
   amountXLM?: string;
   amount?: string;
   currency?: "XLM" | "USDC";
+  assetCode?: string | null;
+  assetIssuer?: string | null;
   message?: string;
   transactionHash: string;
   createdAt: string;

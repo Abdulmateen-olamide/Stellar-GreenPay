@@ -5,9 +5,30 @@
 "use strict";
 const express = require("express");
 const router = express.Router();
-const { v4: uuid } = require("uuid");
 const pool = require("../db/pool");
-const logger = require("../logger");
+const { z } = require("zod");
+
+const PUBLIC_KEY_PATTERN = /^G[A-Z0-9]{55}$/;
+const publicKeySchema = z.string().regex(PUBLIC_KEY_PATTERN, "Invalid Stellar public key");
+const createReferralSchema = z.object({
+  referrerAddress: z.string().regex(PUBLIC_KEY_PATTERN, "Invalid referrer address"),
+  referredAddress: z.string().regex(PUBLIC_KEY_PATTERN, "Invalid referred address"),
+}).refine((referral) => referral.referrerAddress !== referral.referredAddress, {
+  message: "Cannot refer yourself",
+  path: ["referredAddress"],
+});
+
+function validationError(message) {
+  const error = new Error(message);
+  error.status = 400;
+  return error;
+}
+
+function duplicateReferralError() {
+  const error = new Error("Referral already claimed");
+  error.status = 409;
+  return error;
+}
 
 /**
  * GET /api/referrals/:publicKey
@@ -15,14 +36,9 @@ const logger = require("../logger");
  */
 router.get("/:publicKey", async (req, res, next) => {
   try {
-    const { publicKey } = req.params;
-    
-    // Validate public key format
-    if (!publicKey || !/^G[A-Z0-9]{55}$/.test(publicKey)) {
-      const e = new Error("Invalid Stellar public key");
-      e.status = 400;
-      throw e;
-    }
+    const parsedPublicKey = publicKeySchema.safeParse(req.params.publicKey);
+    if (!parsedPublicKey.success) throw validationError("Invalid Stellar public key");
+    const publicKey = parsedPublicKey.data;
 
     const result = await pool.query(
       `SELECT 
@@ -66,24 +82,11 @@ router.get("/:publicKey", async (req, res, next) => {
 router.post("/", async (req, res, next) => {
   let client;
   try {
-    const { referrerAddress, referredAddress } = req.body;
-
-    // Validate public keys
-    if (!referrerAddress || !/^G[A-Z0-9]{55}$/.test(referrerAddress)) {
-      const e = new Error("Invalid referrer address");
-      e.status = 400;
-      throw e;
+    const parsedReferral = createReferralSchema.safeParse(req.body);
+    if (!parsedReferral.success) {
+      throw validationError(parsedReferral.error.issues[0].message);
     }
-    if (!referredAddress || !/^G[A-Z0-9]{55}$/.test(referredAddress)) {
-      const e = new Error("Invalid referred address");
-      e.status = 400;
-      throw e;
-    }
-    if (referrerAddress === referredAddress) {
-      const e = new Error("Cannot refer yourself");
-      e.status = 400;
-      throw e;
-    }
+    const { referrerAddress, referredAddress } = parsedReferral.data;
 
     client = await pool.connect();
 
@@ -93,16 +96,18 @@ router.post("/", async (req, res, next) => {
       [referrerAddress, referredAddress]
     );
     if (existingResult.rows[0]) {
-      return res.json({ success: true, data: existingResult.rows[0] });
+      throw duplicateReferralError();
     }
 
     // Create referral record
     const result = await client.query(
       `INSERT INTO referrals (referrer_address, referred_address)
        VALUES ($1, $2)
+       ON CONFLICT (referrer_address, referred_address) DO NOTHING
        RETURNING *`,
       [referrerAddress, referredAddress]
     );
+    if (!result.rows[0]) throw duplicateReferralError();
 
     // Update referrer's profile with referred_by if not set
     await client.query(
@@ -128,7 +133,7 @@ router.post("/", async (req, res, next) => {
 router.post("/award-bonus", async (req, res, next) => {
   let client;
   try {
-    const { referredAddress, donationId, amountXLM } = req.body;
+    const { referredAddress, donationId } = req.body;
 
     if (!referredAddress || !donationId) {
       const e = new Error("Missing required fields");

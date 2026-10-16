@@ -8,6 +8,8 @@ const express = require("express");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 const http = require("http");
+const logger = require("./logger");
+const requestLogger = require("./middleware/requestLogger");
 const { Server } = require("socket.io");
 const { initSentry, errorHandler: sentryErrorMiddleware } = require("./services/sentry");
 const { runMigrations } = require("./db/migrate");
@@ -17,15 +19,16 @@ const { start: startProfileQueue } = require("./services/profileQueue");
 const { start: startStatsRefreshQueue } = require("./services/statsRefreshQueue");
 const { startIndexer } = require("./services/indexerService");
 const { isStellarTimeoutError } = require("./services/stellar");
-const logger = require("./logger");
-const requestLogger = require("./middleware/requestLogger");
 const { createCorsMiddleware, getAllowedOrigins } = require("./middleware/corsPolicy");
 const { createRateLimiter } = require("./middleware/rateLimiter");
 const { metricsHandler, countRequest, startQueueRefresh } = require("./services/metrics");
+const { createSelectiveCsrf } = require("./middleware/selectiveCsrf");
+
 const projectsRouter = require("./routes/projects");
 const uploadsRouter = require("./routes/uploads");
 const donationsRouter = require("./routes/donations");
 const statsRouter = require("./routes/stats");
+const adminRouter = require("./routes/admin");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -33,6 +36,35 @@ const server = http.createServer(app);
 
 // Sentry initialization (must be added before other middleware)
 initSentry(app);
+
+// ── Security & CSP (Helmet) ──────────────────────────────────────────────────
+const apiHelmet = helmet({
+  contentSecurityPolicy: {
+    useDefaults: false,
+    directives: {
+      defaultSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+    },
+  },
+});
+
+const docsHelmet = helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:"],
+    },
+  },
+});
+
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV !== "production" && req.path.startsWith("/api/docs")) {
+    return docsHelmet(req, res, next);
+  }
+  return apiHelmet(req, res, next);
+});
 
 // ── Swagger UI (development) ─────────────────────────────────────────────────
 if (process.env.NODE_ENV !== "production") {
@@ -62,16 +94,10 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(helmet());
-app.use((req, res, next) => {
-  res.setHeader("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'");
-  next();
-});
 app.use(requestLogger);
 app.use(express.json({ limit: "20kb" }));
 app.use(cookieParser());
 
-const { createSelectiveCsrf } = require("./middleware/selectiveCsrf");
 app.use(createSelectiveCsrf({
   cookie: {
     httpOnly: true,
@@ -88,7 +114,6 @@ app.get("/metrics", metricsHandler);
 app.get("/api/metrics", metricsHandler);
 app.use("/health", healthRouter);
 app.use("/api/health", healthRouter);
-
 app.use("/api/v1/health", healthRouter);
 app.use("/api/readiness", readinessRouter);
 // Preferred receive asset for DEX path-payment donations (#1660). Mounted
@@ -96,16 +121,13 @@ app.use("/api/readiness", readinessRouter);
 app.use("/api/projects/:id/preferred-asset", require("./routes/projectPreferredAsset"));
 app.use("/api/v1/projects/:id/preferred-asset", require("./routes/projectPreferredAsset"));
 app.use("/api/projects", projectsRouter);
-app.use("/api/uploads", uploadsRouter);
-app.use("/api/donations", donationsRouter);
 app.use("/api/v1/projects", projectsRouter);
+app.use("/api/uploads", uploadsRouter);
 app.use("/api/v1/uploads", uploadsRouter);
+app.use("/api/donations", donationsRouter);
 app.use("/api/v1/donations", donationsRouter);
 app.use("/api/stats", statsRouter);
 app.use("/api/v1/stats", statsRouter);
-const profilesRouter = require("./routes/profiles");
-app.use("/api/profiles", profilesRouter);
-app.use("/api/v1/profiles", profilesRouter);
 
 const origins = getAllowedOrigins();
 app.use(...createCorsMiddleware(origins));
@@ -132,6 +154,7 @@ app.get("/api/csrf-token", csrfTokenHandler);
 app.get("/api/v1/csrf-token", csrfTokenHandler);
 
 app.use("/api/impact", require("./routes/impact"));
+app.use("/api/v1/impact", require("./routes/impact"));
 app.use("/api/subscriptions", require("./routes/subscriptions"));
 app.use("/api/v1/subscriptions", require("./routes/subscriptions"));
 app.use("/api/referrals", require("./routes/referrals"));
@@ -152,15 +175,21 @@ app.use("/api/v1/comments", require("./routes/comments"));
 // Team giving (corporate/group donation profiles).
 app.use("/api/teams", require("./routes/teams"));
 app.use("/api/v1/teams", require("./routes/teams"));
+// Price oracle endpoints (rates in USD, EUR, BRL)
+app.use("/api/price", require("./routes/price"));
+app.use("/api/v1/price", require("./routes/price"));
+// Admin dashboard, audit log and moderation endpoints (dual-prefix like projects/donations).
+app.use("/api/admin", adminRouter);
+app.use("/api/v1/admin", adminRouter);
 app.use((req, res) => res.status(404).json({ error: `${req.method} ${req.path} not found` }));
 // Sentry error handler — capture exceptions before the final error middleware
 app.use(sentryErrorMiddleware());
 
 app.use((err, req, res, next) => {
   void next;
-  console.error("[Error]", err.message);
   const isTimeout = isStellarTimeoutError(err);
   const status = isTimeout ? 503 : err.status || 500;
+  logger.error({ err, event: "request_error", path: req.path, status }, err.message);
   if (!res.__metricsCounted) {
     res.__metricsCounted = true;
     countRequest(req, { ...res, statusCode: status });
@@ -203,7 +232,10 @@ async function startServer() {
 
   if (process.env.ENABLE_TURRETS === "true") {
     const turretsPort = process.env.TURRETS_PORT || 3001;
-    startTurretsServer(turretsPort);
+    // startTurretsServer returns { app, server } so the listener is closeable
+    // (tests and graceful shutdown). Keep the reference for future wiring.
+    const { server: turretsServer } = startTurretsServer(turretsPort);
+    void turretsServer;
   }
 }
 

@@ -28,6 +28,26 @@ export function isUrlAllowed(urlStr: string, allowlist: string[]): boolean {
   return allowlist.some((pattern) => matchesPattern(pattern, url));
 }
 
+/** Validate a user-entered host/path allowlist pattern before saving it. */
+export function isValidAllowlistPattern(pattern: string): boolean {
+  const value = pattern.trim();
+  if (!value || /\s/.test(value)) return false;
+  const match = value.match(/^(\*:\/\/|https?:\/\/)?([^/]+)(\/.*)?$/i);
+  if (!match) return false;
+  const [, scheme, host, path = "/*"] = match;
+  if (scheme && !["*://", "http://", "https://"].includes(scheme.toLowerCase())) return false;
+  if (host === "*" || host.includes("@") || host.includes(":") && !/^\[[0-9a-f:]+\](?::\d+)?$/i.test(host)) return false;
+  const normalizedHost = host.startsWith("*.") ? host.slice(2) : host;
+  if (!/^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(normalizedHost)) return false;
+  if (!/^\/[a-z0-9._~!$&'()+,;=:@%/*-]*$/i.test(path)) return false;
+  try {
+    new URL(`${scheme === "*://" ? "https://" : scheme || "https://"}${host.replace(/^\*\./, "wildcard.")}${path.replace(/\*/g, "wildcard")}`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Matches a single pattern against a parsed URL.
  *

@@ -8,6 +8,7 @@ import { DEFAULT_SLIPPAGE_BPS, SLIPPAGE_OPTIONS_BPS, effectiveRate, quoteWithinB
 import { signTransactionWithWallet } from "@/lib/wallet";
 import { recordDonation } from "@/lib/api";
 import { formatAmount, formatXLM, formatCO2 } from "@/utils/format";
+import { usePriceContext } from "@/lib/priceContext";
 import type { ClimateProject } from "@/utils/types";
 
 interface DonateFormProps {
@@ -200,6 +201,16 @@ export default function DonateForm({ project, publicKey, initialAmount, initialM
 
   const isValid = amountValid && (!needsConversion || (!!quote && !quoteLoading));
 
+  // Calculate approximate fiat equivalent
+  const fiatEquivalent = (() => {
+    if (!amount || isNaN(amountNum) || amountNum <= 0) return null;
+    if (currency === "XLM") {
+      return formatFiatEquivalent(amountNum);
+    }
+    const usdPerXlm = rates.USD && rates.USD > 0 ? rates.USD : 0.125;
+    return formatFiatEquivalent(amountNum / usdPerXlm);
+  })();
+
   // Calculate CO₂ impact for XLM donations
   const co2Impact = currency === "XLM" && amount && !isNaN(amountNum) && project.co2_per_xlm
     ? (amountNum * project.co2_per_xlm) / 1000 // Convert to kg
@@ -319,6 +330,8 @@ export default function DonateForm({ project, publicKey, initialAmount, initialM
           donorAddress: publicKey,
           amount: amountNum.toString(),
           currency: currency,
+          assetCode: undefined,
+          assetIssuer: undefined,
           message: message.trim() || undefined,
           transactionHash: result.hash,
         });
@@ -358,6 +371,8 @@ export default function DonateForm({ project, publicKey, initialAmount, initialM
           donorAddress: publicKey,
           amount: amountNum.toString(),
           currency: currency,
+          assetCode: currency === "USDC" ? "USDC" : undefined,
+          assetIssuer: currency === "USDC" ? process.env.NEXT_PUBLIC_USDC_ISSUER : undefined,
           message: message.trim() || undefined,
           transactionHash: result.hash,
         });

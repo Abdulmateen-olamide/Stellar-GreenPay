@@ -278,6 +278,8 @@ async function recordDonation(req, res, next) {
         currency === "XLM" ? parsedAmount : null,
         parsedAmount,
         currency,
+        currency === "USDC" ? assetCode : null,
+        currency === "USDC" ? assetIssuer : null,
         message?.trim().slice(0, 100) || null,
         transactionHash,
         donorCountry,
