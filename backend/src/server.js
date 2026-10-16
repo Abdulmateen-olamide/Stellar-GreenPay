@@ -152,6 +152,8 @@ app.use("/api/stats", statsRouter);
 app.use("/api/v1/stats", statsRouter);
 app.use("/api/notifications", notificationsRouter);
 app.use("/api/v1/notifications", notificationsRouter);
+app.use("/api/leaderboard", leaderboardRouter);
+app.use("/api/v1/leaderboard", leaderboardRouter);
 
 const origins = getAllowedOrigins();
 app.use(...createCorsMiddleware(origins));
