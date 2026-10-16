@@ -116,6 +116,10 @@ app.use("/health", healthRouter);
 app.use("/api/health", healthRouter);
 app.use("/api/v1/health", healthRouter);
 app.use("/api/readiness", readinessRouter);
+// Preferred receive asset for DEX path-payment donations (#1660). Mounted
+// before the projects router so its sub-path is matched here.
+app.use("/api/projects/:id/preferred-asset", require("./routes/projectPreferredAsset"));
+app.use("/api/v1/projects/:id/preferred-asset", require("./routes/projectPreferredAsset"));
 app.use("/api/projects", projectsRouter);
 app.use("/api/v1/projects", projectsRouter);
 app.use("/api/uploads", uploadsRouter);
@@ -165,6 +169,9 @@ app.use("/api/v1/auth", require("./routes/auth"));
 // Project ratings (donor-submitted, wallet-authenticated).
 app.use("/api/ratings", require("./routes/ratings"));
 app.use("/api/v1/ratings", require("./routes/ratings"));
+// Donor comments on project pages (wallet-authenticated, moderated, rate limited).
+app.use("/api/comments", require("./routes/comments"));
+app.use("/api/v1/comments", require("./routes/comments"));
 // Team giving (corporate/group donation profiles).
 app.use("/api/teams", require("./routes/teams"));
 app.use("/api/v1/teams", require("./routes/teams"));

@@ -6,6 +6,8 @@
 
 const { Horizon, Networks, rpc, Contract, TransactionBuilder, scValToNative, xdr, Address, StrKey, Account, Config } = require("@stellar/stellar-sdk");
 
+const { extractDelivery } = require("./pathPayment");
+
 const NETWORK     = process.env.STELLAR_NETWORK || "testnet";
 const HORIZON_URL = process.env.HORIZON_URL || "https://horizon-testnet.stellar.org";
 const RPC_URL     = process.env.SOROBAN_RPC_URL || "https://soroban-testnet.stellar.org";
@@ -476,6 +478,20 @@ async function getFundingMilestoneEvents(startLedger) {
   return events;
 }
 
+/**
+ * What a classic payment / DEX path-payment transaction delivered to
+ * `destination` from `source`, read from Horizon's operation records (#1660).
+ * Donation recording uses this instead of the client-reported amount so a
+ * path payment is credited with what the project actually received.
+ *
+ * @param {{transactionHash: string, destination: string, source: string}} params
+ * @returns {Promise<ReturnType<typeof import("./pathPayment").extractDelivery>>}
+ */
+async function getDeliveredPayment({ transactionHash, destination, source }) {
+  const page = await server.operations().forTransaction(transactionHash).limit(200).call();
+  return extractDelivery(page.records, { destination, source });
+}
+
 module.exports = {
   server,
   rpcServer,
@@ -488,4 +504,5 @@ module.exports = {
   getRegisteredProjectIdFromTransaction,
   getProjectDeactivatedEvents,
   getFundingMilestoneEvents,
+  getDeliveredPayment,
 };
