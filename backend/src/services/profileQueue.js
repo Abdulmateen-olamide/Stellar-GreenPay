@@ -2,6 +2,7 @@
 
 const PgBoss = require("pg-boss");
 const pool = require("../db/pool");
+const logger = require("../logger");
 const { computeBadges } = require("./store");
 
 const QUEUE = "profile-update";
@@ -70,7 +71,7 @@ async function start(io) {
     process.env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/greenpay";
 
   boss = new PgBoss(connectionString);
-  boss.on("error", (err) => console.error("[profileQueue] pg-boss error:", err.message));
+  boss.on("error", (err) => logger.error({ event: "profile_queue_pgboss_error", err: err.message }, "[profileQueue] pg-boss error"));
 
   await boss.start();
 
@@ -83,7 +84,7 @@ async function start(io) {
     }
   });
 
-  console.log("[profileQueue] pg-boss started, worker registered on queue:", QUEUE);
+  logger.info({ event: "profile_queue_started", queue: QUEUE }, `[profileQueue] pg-boss started, worker registered on queue: ${QUEUE}`);
 }
 
 async function enqueueProfileUpdate(donorAddress) {

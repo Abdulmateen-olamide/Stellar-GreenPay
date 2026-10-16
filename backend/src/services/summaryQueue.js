@@ -9,6 +9,7 @@
 const crypto = require("crypto");
 const PgBoss = require("pg-boss");
 const pool = require("../db/pool");
+const logger = require("../logger");
 const { generateProjectSummary } = require("./claude");
 const { logAdminAction } = require("./audit");
 
@@ -29,7 +30,7 @@ async function start(io) {
 
   boss = new PgBoss(connectionString);
 
-  boss.on("error", (err) => console.error("[summaryQueue] pg-boss error:", err.message));
+  boss.on("error", (err) => logger.error({ event: "summary_queue_pgboss_error", err: err.message }, "[summaryQueue] pg-boss error"));
 
   await boss.start();
 
@@ -42,7 +43,7 @@ async function start(io) {
     } catch (err) {
       if (err.code === "MISSING_API_KEY") {
         // Permanent misconfiguration — log and give up without retrying.
-        console.error("[summaryQueue] ANTHROPIC_API_KEY not set; skipping job", projectId);
+        logger.error({ event: "summary_queue_missing_api_key", projectId }, "[summaryQueue] ANTHROPIC_API_KEY not set; skipping job");
         return;
       }
       throw err; // pg-boss will retry according to retryLimit
@@ -92,7 +93,7 @@ async function start(io) {
     });
   });
 
-  console.log("[summaryQueue] pg-boss started, worker registered on queue:", QUEUE);
+  logger.info({ event: "summary_queue_started", queue: QUEUE }, `[summaryQueue] pg-boss started, worker registered on queue: ${QUEUE}`);
 }
 
 /**

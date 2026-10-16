@@ -2,6 +2,7 @@
 
 const { v4: uuid } = require("uuid");
 const pool = require("../db/pool");
+const logger = require("../logger");
 
 async function logAdminAction({ actor, action, targetType, targetId, metadata, ipAddress }) {
   try {
@@ -11,7 +12,7 @@ async function logAdminAction({ actor, action, targetType, targetId, metadata, i
       [uuid(), actor, action, targetType || null, targetId || null, JSON.stringify(metadata || {}), ipAddress || null],
     );
   } catch (err) {
-    console.error("[AuditLog] Failed to record action:", err.message);
+    logger.error({ event: "audit_log_failed", err: err.message }, `[AuditLog] Failed to record action: ${err.message}`);
   }
 }
 

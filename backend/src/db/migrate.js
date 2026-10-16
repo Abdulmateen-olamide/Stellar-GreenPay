@@ -3,6 +3,7 @@
 const fs = require("fs");
 const path = require("path");
 const pool = require("./pool");
+const logger = require("../logger");
 const { seedProjects, seedProjectUpdates, seedJobs } = require("../services/store");
 
 const MIGRATIONS_DIR = path.join(__dirname, "migrations");
@@ -54,7 +55,7 @@ async function runMigrations() {
     for (const { version, file } of files) {
       if (applied.includes(version)) continue;
       const migration = require(file);
-      console.log(`[DB] Applying migration: ${version}`);
+      logger.info({ event: "db_migration_apply", version }, `[DB] Applying migration: ${version}`);
       await migration.up(client);
       await client.query(
         "INSERT INTO schema_migrations (version, name) VALUES ($1, $2)",
@@ -64,7 +65,7 @@ async function runMigrations() {
     }
 
     if (ran === 0) {
-      console.log("[DB] No pending migrations");
+      logger.info({ event: "db_no_pending_migrations" }, "[DB] No pending migrations");
     }
 
     await client.query("COMMIT");
@@ -76,7 +77,7 @@ async function runMigrations() {
   }
 
   await seedDatabase();
-  console.log("[DB] Migration complete");
+  logger.info({ event: "db_migration_complete" }, "[DB] Migration complete");
 }
 
 /**
@@ -97,7 +98,7 @@ async function rollbackMigrations(steps = 1) {
     );
 
     if (result.rows.length === 0) {
-      console.log("[DB] Nothing to roll back");
+      logger.info({ event: "db_rollback_nothing" }, "[DB] Nothing to roll back");
       await client.query("COMMIT");
       return;
     }
@@ -111,7 +112,7 @@ async function rollbackMigrations(steps = 1) {
       if (typeof migration.down !== "function") {
         throw new Error(`Migration ${row.version} does not export a down() function`);
       }
-      console.log(`[DB] Rolling back migration: ${row.version}`);
+      logger.info({ event: "db_rollback_apply", version: row.version }, `[DB] Rolling back migration: ${row.version}`);
       await migration.down(client);
       await client.query(
         "DELETE FROM schema_migrations WHERE version = $1",
@@ -120,7 +121,7 @@ async function rollbackMigrations(steps = 1) {
     }
 
     await client.query("COMMIT");
-    console.log(`[DB] Rolled back ${result.rows.length} migration(s)`);
+    logger.info({ event: "db_rollback_complete", count: result.rows.length }, `[DB] Rolled back ${result.rows.length} migration(s)`);
   } catch (err) {
     await client.query("ROLLBACK");
     throw err;
@@ -219,14 +220,14 @@ if (require.main === module) {
     rollbackMigrations(steps)
       .then(() => process.exit(0))
       .catch((err) => {
-        console.error("[DB] Rollback failed:", err.message);
+        logger.error({ event: "db_rollback_failed", err: err.message }, `[DB] Rollback failed: ${err.message}`);
         process.exit(1);
       });
   } else {
     runMigrations()
       .then(() => process.exit(0))
       .catch((err) => {
-        console.error("[DB] Migration failed:", err.message);
+        logger.error({ event: "db_migration_failed", err: err.message }, `[DB] Migration failed: ${err.message}`);
         process.exit(1);
       });
   }

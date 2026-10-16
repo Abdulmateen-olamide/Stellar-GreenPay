@@ -44,7 +44,7 @@ if (process.env.NODE_ENV !== "production") {
     app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerDoc));
   } catch (err) {
     // Missing js-yaml/openapi must not crash require("../server") during tests
-    console.warn("[swagger] docs unavailable:", err.message);
+    logger.warn({ event: "swagger_docs_unavailable", err: err.message }, `[swagger] docs unavailable: ${err.message}`);
   }
 }
 
@@ -136,7 +136,7 @@ app.use(sentryErrorMiddleware());
 
 app.use((err, req, res, next) => {
   void next;
-  console.error("[Error]", err.message);
+  logger.error({ event: "unhandled_request_error", err: err.message }, `[Error] ${err.message}`);
   res.status(err.status || 500).json({ error: err.message || "Internal server error" });
 });
 
