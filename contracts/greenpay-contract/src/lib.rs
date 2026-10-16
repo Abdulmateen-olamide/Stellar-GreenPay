@@ -3446,6 +3446,52 @@ mod tests {
         });
     }
 
+    /// `upgrade()` is admin-gated by address comparison: passing anyone other
+    /// than the stored admin must panic, even when authorization itself is
+    /// satisfied (mock_all_auths). This exercises the stored-admin check
+    /// independently of the require_auth() layer (issue #1636).
+    #[test]
+    #[should_panic(expected = "Only admin can upgrade")]
+    fn test_upgrade_rejects_non_admin_caller() {
+        let (env, _cid, client, _admin, _pid) = crate::tests::setup();
+        let attacker = Address::generate(&env);
+        // The panic fires before env.deployer().update_current_contract_wasm(),
+        // so a placeholder hash is safe here.
+        let fake_hash = BytesN::from_array(&env, &[7u8; 32]);
+        client.upgrade(&attacker, &fake_hash);
+    }
+
+    /// `upgrade()` calls `admin.require_auth()` before anything else: with no
+    /// mocked authorizations, even the genuine stored admin address is
+    /// rejected at the auth layer, and no state may change as a result
+    /// (issue #1636). Mirrors the stored-admin test above so both guard
+    /// layers are covered.
+    #[test]
+    fn test_upgrade_requires_admin_authorization() {
+        // Deliberately no env.mock_all_auths(): require_auth() must reject.
+        let env = Env::default();
+        let cid = env.register_contract(None, GreenPayContract);
+        let client = GreenPayContractClient::new(&env, &cid);
+        let admin = Address::generate(&env);
+        // initialize() is permissionless, so no auth mocking is needed to
+        // bootstrap the contract.
+        client.initialize(&admin);
+
+        let fake_hash = BytesN::from_array(&env, &[7u8; 32]);
+        let result = client.try_upgrade(&admin, &fake_hash);
+        assert!(
+            result.is_err(),
+            "upgrade() must be rejected when the admin has not authorized the invocation"
+        );
+
+        // The rejected call must not have written the new WASM hash.
+        assert_eq!(
+            client.get_contract_wasm_hash(),
+            None,
+            "a rejected upgrade() must not persist a WASM hash"
+        );
+    }
+
     // ─── Governance tests ─────────────────────────────────────────────────────
 
     #[test]
