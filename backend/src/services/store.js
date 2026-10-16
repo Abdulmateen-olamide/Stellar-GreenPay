@@ -157,6 +157,10 @@ function mapProjectRow(row) {
     location: row.location,
     imageUrl: row.image_url || null,
     walletAddress: row.wallet_address,
+    // Asset the project wants to receive (#1660); null = native XLM.
+    preferredAsset: row.preferred_asset_code
+      ? { code: row.preferred_asset_code, issuer: row.preferred_asset_issuer }
+      : null,
     goalXLM: row.goal_xlm?.toString() || "0",
     raisedXLM: row.raised_xlm?.toString() || "0",
     donorCount: row.donor_count,
@@ -223,6 +227,13 @@ function mapDonationRow(row) {
 
   if (row.donor_country) {
     data.donorCountry = row.donor_country;
+  }
+
+  // DEX path payments (#1660): what the donor spent, when it differs from the
+  // delivered asset recorded in currency/amount.
+  if (row.source_asset) {
+    data.sourceAsset = row.source_asset;
+    data.sourceAmount = row.source_amount?.toString() ?? null;
   }
 
   return data;

@@ -33,6 +33,9 @@ export interface ClimateProject {
   location: string;
   imageUrl?: string;
   walletAddress: string;       // Stellar address that receives donations
+  // Asset the project prefers to receive. null/undefined = native XLM.
+  // When set, donors paying in another asset go through a DEX path payment.
+  preferredAsset?: { code: string; issuer: string } | null;
   goalXLM: string;             // fundraising goal
   raisedXLM: string;           // total raised so far
   donorCount: number;
@@ -154,6 +157,10 @@ export interface Donation {
   message?: string;
   transactionHash: string;
   createdAt: string;
+  // DEX path payments (#1660): what the donor spent when it differs from the
+  // delivered `currency`/`amount` ("XLM" or "CODE:ISSUER").
+  sourceAsset?: string;
+  sourceAmount?: string | null;
   // On-chain contract data
   contractRecordId?: string;
   // Matching status

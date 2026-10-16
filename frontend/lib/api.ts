@@ -291,6 +291,11 @@ export async function recordDonation(payload: {
   currency?: "XLM" | "USDC";
   message?: string;
   transactionHash: string;
+  /**
+   * DEX path payment (#1660). The backend then ignores amount/currency and
+   * records what Horizon says the project wallet actually received.
+   */
+  pathPayment?: boolean;
 }) {
   const { data } = await api.post<{ success: boolean; data: Donation }>(
     "/api/donations",

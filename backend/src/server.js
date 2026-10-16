@@ -91,6 +91,10 @@ app.use("/api/health", healthRouter);
 
 app.use("/api/v1/health", healthRouter);
 app.use("/api/readiness", readinessRouter);
+// Preferred receive asset for DEX path-payment donations (#1660). Mounted
+// before the projects router so its sub-path is matched here.
+app.use("/api/projects/:id/preferred-asset", require("./routes/projectPreferredAsset"));
+app.use("/api/v1/projects/:id/preferred-asset", require("./routes/projectPreferredAsset"));
 app.use("/api/projects", projectsRouter);
 app.use("/api/uploads", uploadsRouter);
 app.use("/api/donations", donationsRouter);
