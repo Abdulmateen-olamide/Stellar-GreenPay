@@ -356,11 +356,13 @@ function startTurretsServer(port = 3001) {
     }
   });
 
-  app.listen(port, () => {
+  // Return the http.Server alongside the app so callers (and tests) can
+  // close the listener and release the port instead of leaking a handle.
+  const server = app.listen(port, () => {
     console.log(`Turrets server listening on port ${port}`);
   });
 
-  return app;
+  return { app, server };
 }
 
 /**
