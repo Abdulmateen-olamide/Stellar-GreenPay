@@ -887,5 +887,4 @@ impl MockPausedGreenPayContract {
             .unwrap_or(false)
     }
 }
-
 } // mod tests

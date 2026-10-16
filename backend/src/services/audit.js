@@ -20,7 +20,7 @@ async function cleanupOldAuditEntries() {
       [AUDIT_RETENTION_DAYS],
     );
   } catch (err) {
-    console.error("[AuditLog] Failed to apply retention policy:", err.message);
+    logger.error({ event: "audit_cleanup_failed", err: err.message }, "[AuditLog] Failed to apply retention policy: " + err.message);
   }
 }
 
