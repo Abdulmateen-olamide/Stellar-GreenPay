@@ -47,6 +47,10 @@ const updatesRouter = require("./routes/updates");
 const teamsRouter = require("./routes/teams");
 const priceRouter = require("./routes/price");
 const webhooksRouter = require("./routes/webhooks");
+const extensionRouter = require("./routes/extension");
+const mobileRouter = require("./routes/mobile");
+const profilesRouter = require("./routes/profiles");
+const leaderboardRouter = require("./routes/leaderboard");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -199,12 +203,21 @@ app.use("/api/v1/comments", commentsRouter);
 
 app.use("/api/updates", updatesRouter);
 app.use("/api/v1/updates", updatesRouter);
+app.use("/api/profiles", profilesRouter);
+app.use("/api/v1/profiles", profilesRouter);
+app.use("/api/leaderboard", leaderboardRouter);
+app.use("/api/v1/leaderboard", leaderboardRouter);
 // Team giving (corporate/group donation profiles).
 app.use("/api/teams", teamsRouter);
 app.use("/api/v1/teams", teamsRouter);
 // Price oracle endpoints (rates in USD, EUR, BRL)
 app.use("/api/price", priceRouter);
 app.use("/api/v1/price", priceRouter);
+// Companion extension & mobile client routers (CSRF-exempt)
+app.use("/api/extension", extensionRouter);
+app.use("/api/v1/extension", extensionRouter);
+app.use("/api/mobile", mobileRouter);
+app.use("/api/v1/mobile", mobileRouter);
 // Admin dashboard, audit log and moderation endpoints (dual-prefix like projects/donations).
 app.use("/api/admin", adminRouter);
 app.use("/api/v1/admin", adminRouter);

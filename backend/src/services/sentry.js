@@ -25,14 +25,17 @@ function initSentry(app) {
     logger.error({ event: "unhandled_rejection", reason }, "[Unhandled Rejection]");
   });
 
-  app.use(Sentry.Handlers.requestHandler());
-  app.use(Sentry.Handlers.tracingHandler());
+  if (Sentry.Handlers?.requestHandler) app.use(Sentry.Handlers.requestHandler());
+  if (Sentry.Handlers?.tracingHandler) app.use(Sentry.Handlers.tracingHandler());
 
   return Sentry;
 }
 
 function errorHandler() {
-  return Sentry.Handlers.errorHandler();
+  if (Sentry.Handlers?.errorHandler) {
+    return Sentry.Handlers.errorHandler();
+  }
+  return (err, req, res, next) => next(err);
 }
 
 module.exports = { initSentry, errorHandler, Sentry };

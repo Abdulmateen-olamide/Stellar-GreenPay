@@ -16,5 +16,13 @@ module.exports = {
     "^uuid$": path.resolve(__dirname, "__mocks__/uuid.js"),
     // expo-server-sdk v6+ is pure ESM; same treatment.
     "^expo-server-sdk$": path.resolve(__dirname, "__mocks__/expo-server-sdk.js"),
+    // uint8array-extras is pure ESM; map to a CJS shim for Jest.
+    "^uint8array-extras$": path.resolve(__dirname, "__mocks__/uint8array-extras.js"),
+    // @exodus/bytes/base32.js is pure ESM; map to a CJS shim for Jest.
+    "^@exodus/bytes/base32(\\.js)?$": path.resolve(__dirname, "__mocks__/@exodus/bytes/base32.js"),
+    // @noble/hashes/sha2.js is pure ESM; map to a CJS shim for Jest.
+    "^@noble/hashes/sha2(\\.js)?$": path.resolve(__dirname, "__mocks__/@noble/hashes/sha2.js"),
+    // @noble/ed25519 is pure ESM; map to a CJS shim for Jest.
+    "^@noble/ed25519(\\.js)?$": path.resolve(__dirname, "__mocks__/@noble/ed25519.js"),
   },
 };
