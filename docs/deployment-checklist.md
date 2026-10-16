@@ -9,9 +9,9 @@ Use this checklist to ensure a smooth and safe mainnet deployment.
 ### Week Before Deployment
 
 - [ ] **Review All Documentation**
-  - [ ] Read [`MAINNET-DEPLOYMENT.md`](MAINNET-DEPLOYMENT.md)
-  - [ ] Review [`scripts/PREFLIGHT-README.md`](scripts/PREFLIGHT-README.md)
-  - [ ] Bookmark [`scripts/QUICK-REFERENCE.md`](scripts/QUICK-REFERENCE.md)
+  - [ ] Read [`deployment-mainnet.md`](deployment-mainnet.md)
+  - [ ] Review [`preflight.md`](preflight.md)
+  - [ ] Bookmark [`quick-reference.md`](quick-reference.md)
 
 - [ ] **Infrastructure Preparation**
   - [ ] Production database provisioned
@@ -41,6 +41,7 @@ Use this checklist to ensure a smooth and safe mainnet deployment.
   - [ ] Contract initialization verified
   - [ ] Contract admin keys secured in vault
   - [ ] Contract functionality tested on mainnet
+  - [ ] [Contract deployment & rollback guide](contract-deployment.md) reviewed
 
 - [ ] **Environment Configuration**
   - [ ] Copy `.env.mainnet.example` to `.env.mainnet`

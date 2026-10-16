@@ -2,8 +2,32 @@
  * utils/format.ts
  * Formatting helpers and small UI-friendly utilities shared across the frontend.
  */
-import { formatDistanceToNow, format } from "date-fns";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import { getFormattingLocale } from "@/lib/formatLocale";
 import type { ProjectStatus, BadgeTier } from "./types";
+dayjs.extend(relativeTime);
+
+function toDate(value: string | Date): Date {
+  if (value instanceof Date) return value;
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (dateOnly) {
+    return new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]));
+  }
+  return new Date(value);
+}
+
+export function formatAmount(
+  amount: number,
+  decimals = 2,
+  locale?: string,
+): string {
+  const minimumFractionDigits = Math.min(2, decimals);
+  return new Intl.NumberFormat(locale ?? getFormattingLocale(), {
+    minimumFractionDigits,
+    maximumFractionDigits: decimals,
+  }).format(amount);
+}
 
 /**
  * Format an amount as XLM with locale separators.
@@ -18,10 +42,55 @@ import type { ProjectStatus, BadgeTier } from "./types";
  * @example
  * formatXLM("1000", 0) // "1,000 XLM"
  */
-export function formatXLM(amount: string | number, decimals = 2): string {
+export function formatXLM(amount: string | number, decimals = 2, locale?: string): string {
   const n = typeof amount === "string" ? parseFloat(amount) : amount;
   if (isNaN(n)) return "0 XLM";
-  return `${n.toLocaleString("en-US", { maximumFractionDigits: decimals })} XLM`;
+  return `${formatAmount(n, decimals, locale)} XLM`;
+}
+
+/**
+ * Normalize an XLM amount to 7 decimal places (1 stroop = 0.0000001 XLM).
+ * Handles numbers, strings, and scientific notation (e.g. 1e-6).
+ *
+ * @param amount - XLM amount as number or string.
+ * @returns Normalized fixed decimal string with 7 decimal places (e.g. "0.0000010").
+ */
+export function normalizeXLMAmount(amount: number | string): string {
+  const n = typeof amount === "string" ? parseFloat(amount.replace(/,/g, "")) : Number(amount);
+  if (isNaN(n) || !Number.isFinite(n)) return "0.0000000";
+  return n.toFixed(7);
+}
+
+/**
+ * Format an XLM amount into an approximate fiat currency equivalent (USD, EUR, BRL).
+ *
+ * @param xlmAmount - Amount in XLM.
+ * @param rate - Current XLM→Fiat rate; when null/zero, returns null.
+ * @param currency - Target fiat currency code ("USD" | "EUR" | "BRL").
+ * @param locale - Formatting locale.
+ * @returns A string like `"≈ $12.34 USD"`, `"≈ €11.35 EUR"`, or `"≈ R$ 67.89 BRL"`.
+ */
+export function formatFiatEquivalent(
+  xlmAmount: string | number,
+  rate: number | null,
+  currency: "USD" | "EUR" | "BRL" = "USD",
+  locale?: string,
+): string | null {
+  if (rate === null || rate <= 0) return null;
+  const n = typeof xlmAmount === "string" ? parseFloat(xlmAmount) : xlmAmount;
+  if (isNaN(n) || !isFinite(n)) return null;
+  const fiatVal = n * rate;
+  const formatted = formatAmount(fiatVal, 2, locale);
+
+  switch (currency) {
+    case "EUR":
+      return `≈ €${formatted} EUR`;
+    case "BRL":
+      return `≈ R$ ${formatted} BRL`;
+    case "USD":
+    default:
+      return `≈ $${formatted} USD`;
+  }
 }
 
 /**
@@ -32,12 +101,12 @@ export function formatXLM(amount: string | number, decimals = 2): string {
  * @returns A string like `"≈ $12.34 USD"` or `null` if not available.
  * @throws {Error} Never throws; returns `null` for invalid inputs.
  */
-export function formatUSDEquivalent(xlmAmount: string | number, price: number | null): string | null {
-  if (price === null) return null;
-  const n = typeof xlmAmount === "string" ? parseFloat(xlmAmount) : xlmAmount;
-  if (isNaN(n)) return null;
-  const usd = n * price;
-  return `≈ $${usd.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;
+export function formatUSDEquivalent(
+  xlmAmount: string | number,
+  price: number | null,
+  locale?: string,
+): string | null {
+  return formatFiatEquivalent(xlmAmount, price, "USD", locale);
 }
 
 /**
@@ -53,9 +122,9 @@ export function formatUSDEquivalent(xlmAmount: string | number, price: number | 
  * formatCO2(1200) // "1.2k kg CO₂"
  */
 export function formatCO2(kg: number): string {
-  if (kg >= 1_000_000) return `${(kg / 1_000_000).toFixed(1)}M kg CO₂`;
-  if (kg >= 1_000) return `${(kg / 1_000).toFixed(1)}k kg CO₂`;
-  return `${kg.toLocaleString()} kg CO₂`;
+  if (kg >= 1_000_000) return `${formatAmount(kg / 1_000_000, 1)}M kg CO₂`;
+  if (kg >= 1_000) return `${formatAmount(kg / 1_000, 1)}k kg CO₂`;
+  return `${formatAmount(kg, 0)} kg CO₂`;
 }
 
 /**
@@ -85,20 +154,49 @@ export function progressPercent(raised: string, goal: string): number {
  * @throws {Error} Never throws.
  */
 export function timeAgo(d: string): string {
-  try { return formatDistanceToNow(new Date(d), { addSuffix: true }); }
+  try { return dayjs(d).fromNow(); }
   catch { return d; }
 }
 
 /**
- * Format an ISO date string as "MMM d, yyyy".
+ * Format a date using the active application locale.
  *
  * @param d - ISO date string.
  * @returns Formatted date string, or the original input on failure.
  * @throws {Error} Never throws.
  */
-export function formatDate(d: string): string {
-  try { return format(new Date(d), "MMM d, yyyy"); }
-  catch { return d; }
+export function formatDate(
+  d: string | Date,
+  locale?: string,
+  options?: Intl.DateTimeFormatOptions,
+): string {
+  try {
+    return new Intl.DateTimeFormat(locale ?? getFormattingLocale(), options).format(toDate(d));
+  } catch {
+    return typeof d === "string" ? d : String(d);
+  }
+}
+
+export function formatDateTime(d: string | Date, locale?: string): string {
+  try {
+    return new Intl.DateTimeFormat(locale ?? getFormattingLocale(), {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(toDate(d));
+  } catch {
+    return typeof d === "string" ? d : String(d);
+  }
+}
+
+export function formatTime(d: string | Date, locale?: string): string {
+  try {
+    return new Intl.DateTimeFormat(locale ?? getFormattingLocale(), {
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(toDate(d));
+  } catch {
+    return typeof d === "string" ? d : String(d);
+  }
 }
 
 /**

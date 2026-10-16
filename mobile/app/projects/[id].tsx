@@ -47,6 +47,13 @@ import {
   type RecurringDonation,
 } from '../../utils/recurringDonations';
 
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
+
+/**
+ * Format an ISO due date for the recurring-donation banner.
+ * Exported so `ProjectDetailScreen.test.tsx` can pin the locale-agnostic
+ * contract (invalid input must fall back to the raw string).
+ */
 export function formatNextPaymentDate(isoDate: string): string {
   try {
     const date = new Date(isoDate);
@@ -60,8 +67,6 @@ export function formatNextPaymentDate(isoDate: string): string {
     return isoDate;
   }
 }
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -133,6 +138,7 @@ function Toast({
     // defence for any future async path that updates the closure.
     let holdTimer: ReturnType<typeof setTimeout> | undefined;
     let mounted = true;
+
     const anim = Animated.timing(opacity, {
       toValue: 1,
       duration: 200,
@@ -146,7 +152,6 @@ function Toast({
       // Hold for 2 s, then fade out
       holdTimer = setTimeout(() => {
         if (!mounted) return;
-
         Animated.timing(opacity, {
           toValue: 0,
           duration: 300,
@@ -165,6 +170,7 @@ function Toast({
       opacity.stopAnimation();
     };
   }, [opacity]);
+
 
   const bg = variant === 'success' ? '#227239' : '#b91c1c';
 
@@ -221,6 +227,11 @@ export default function ProjectDetailScreen() {
   const [followLoading, setFollowLoading] = useState(false);
   const [activeDonation, setActiveDonation] = useState<RecurringDonation | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
+  const viewShotRef = useRef<View>(null);
+
+  const showToast = useCallback((message: string, variant: ToastVariant = 'success') => {
+    setToast({ message, variant });
+  }, []);
 
   const checkRecurringDonation = useCallback(async (projectId: string) => {
     try {
@@ -256,6 +267,8 @@ export default function ProjectDetailScreen() {
     }
   }, [id]);
 
+  // ── helpers ────────────────────────────────────────────────────────────────
+
   const loadUpdates = async (projectId: string) => {
     try {
       const res = await axios.get(`${API_URL}/api/updates/${projectId}`);
@@ -263,12 +276,6 @@ export default function ProjectDetailScreen() {
     } catch (error) {
       console.error('Error loading updates:', error);
     }
-  };
-
-  // ── helpers ────────────────────────────────────────────────────────────────
-
-  const showToast = (message: string, variant: ToastVariant = 'success') => {
-    setToast({ message, variant });
   };
 
   const initializeNotifications = async () => {
@@ -463,7 +470,7 @@ export default function ProjectDetailScreen() {
               <Text style={[styles.category, { color: colors.headerText }]}>
                 {project.category}
               </Text>
-              <Text style={[styles.name, { color: colors.headerText }]}>
+              <Text style={[styles.name, { color: colors.headerText }]} accessibilityRole="header">
                 {project.name}
               </Text>
               <Text style={[styles.location, { color: colors.headerText }]}>
@@ -471,15 +478,15 @@ export default function ProjectDetailScreen() {
               </Text>
             </View>
             <TouchableOpacity
+              testID="share-button"
               style={styles.shareButton}
               onPress={handleShare}
               activeOpacity={0.7}
-              testID="share-button"
               accessibilityRole="button"
               accessibilityLabel={`Share ${project.name}`}
               accessibilityHint="Opens the system share sheet so you can send this project to others"
             >
-              <Text style={styles.shareIcon}>↗</Text>
+              <Text style={styles.shareIcon} accessibilityElementsHidden importantForAccessibility="no">↗</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -496,7 +503,7 @@ export default function ProjectDetailScreen() {
                 shadowColor: colors.cardShadow,
               },
             ]}
-            accessibilityRole="region"
+            accessibilityRole="summary"
             accessibilityLabel={`Active recurring donation banner for ${project.name}`}
           >
             <View style={styles.recurringBannerContent}>
@@ -569,7 +576,7 @@ export default function ProjectDetailScreen() {
             },
           ]}
         >
-          <Text style={[styles.progressTitle, { color: colors.primaryText }]}>
+          <Text style={[styles.progressTitle, { color: colors.primaryText }]} accessibilityRole="header">
             Fundraising Progress
           </Text>
           <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
@@ -599,7 +606,7 @@ export default function ProjectDetailScreen() {
             },
           ]}
         >
-          <Text style={[styles.sectionTitle, { color: colors.primaryText }]}>
+          <Text style={[styles.sectionTitle, { color: colors.primaryText }]} accessibilityRole="header">
             About this project
           </Text>
           <Text style={[styles.description, { color: colors.secondaryText }]}>
@@ -623,7 +630,7 @@ export default function ProjectDetailScreen() {
           accessibilityRole="summary"
           accessibilityLabel={`Updates for ${project.name}`}
         >
-          <Text style={[styles.sectionTitle, { color: colors.primaryText }]}>
+          <Text style={[styles.sectionTitle, { color: colors.primaryText }]} accessibilityRole="header">
             📰 Updates
           </Text>
 
@@ -751,6 +758,8 @@ export default function ProjectDetailScreen() {
           </View>
         </View>
 
+        {/* Follow button — always visible; dimmed when no push token so the
+            feature is discoverable and pressing it explains why it can't run */}
         {/* Map — guarded on both coordinates being present. Projects created
             before we started capturing coordinates come back from the API with
             `latitude`/`longitude` set to `null`, and handing those straight to
@@ -835,7 +844,7 @@ export default function ProjectDetailScreen() {
               },
             ]}
           >
-            <Text style={[styles.sectionTitle, { color: colors.primaryText }]}>
+            <Text style={[styles.sectionTitle, { color: colors.primaryText }]} accessibilityRole="header">
               Latest Updates
             </Text>
             {updates.map((update) => (
@@ -872,7 +881,7 @@ export default function ProjectDetailScreen() {
           disabled={followLoading}
           accessibilityRole="button"
           accessibilityLabel={followButtonLabel}
-          accessibilityState={{ selected: isFollowing, busy: followLoading }}
+          accessibilityState={{ selected: isFollowing, busy: followLoading, disabled: followLoading }}
         >
           <Text
             style={[
@@ -948,9 +957,10 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   shareButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    // 44pt minimum touch target (Apple HIG / WCAG 2.5.5).
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1118,10 +1128,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   manageButton: {
-    backgroundColor: '#227239',
-    paddingVertical: 8,
     paddingHorizontal: 14,
+    paddingVertical: 8,
+    minHeight: 44,
+    justifyContent: 'center',
     borderRadius: 8,
+    backgroundColor: '#227239',
   },
   manageButtonText: {
     color: '#ffffff',
