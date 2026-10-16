@@ -367,7 +367,7 @@ function startTurretsServer(port = 3001) {
  * Start a lightweight Turrets-compatible HTTP server exposing matching endpoints.
  *
  * @param {number} [port=3001] - TCP port to listen on.
- * @returns {object} Express app instance.
+ * @returns {{app: object, server: import('http').Server}} Express app and the underlying HTTP server.
  */
 // exported as `startTurretsServer`
 
