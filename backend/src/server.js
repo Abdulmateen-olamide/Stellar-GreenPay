@@ -46,6 +46,7 @@ const commentsRouter = require("./routes/comments");
 const updatesRouter = require("./routes/updates");
 const teamsRouter = require("./routes/teams");
 const priceRouter = require("./routes/price");
+const webhooksRouter = require("./routes/webhooks");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -207,6 +208,9 @@ app.use("/api/v1/price", priceRouter);
 // Admin dashboard, audit log and moderation endpoints (dual-prefix like projects/donations).
 app.use("/api/admin", adminRouter);
 app.use("/api/v1/admin", adminRouter);
+// Webhook subscription management, delivery history and test sends (dual-prefix like projects/donations).
+app.use("/api/webhooks", webhooksRouter);
+app.use("/api/v1/webhooks", webhooksRouter);
 app.use((req, res) => res.status(404).json({ error: `${req.method} ${req.path} not found` }));
 // Sentry error handler — capture exceptions before the final error middleware
 app.use(sentryErrorMiddleware());
