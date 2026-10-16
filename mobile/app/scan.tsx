@@ -20,10 +20,11 @@ import { useRouter } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useTheme } from './theme';
 import { StrKey } from '@stellar/stellar-sdk';
+import { createScanGate } from '../utils/scanThrottle';
 
 const DEEP_LINK_RE   = /greenpay:\/\/donate\?(.+)/;
 
-export const INVALID_QR_MESSAGE = 'This QR code is not a valid Stellar address';
+export const INVALID_QR_MESSAGE = 'This QR code is not a valid GreenPay wallet address. Try again.';
 
 export function parseScan(data: string): { wallet: string; projectId?: string } | null {
   const deepMatch = data.match(DEEP_LINK_RE);
@@ -84,35 +85,12 @@ export default function ScanScreen() {
 
   const dismissError = () => {
     setError(null);
-    cooldown.current = false;
+    // An explicit dismissal means "scan again now": clear the 500ms interval
+    // as well as the latch so the next frame is accepted immediately.
+    gate.reset();
   };
 
-  const handleBarcode = async ({ data }: { data: string }) => {
-    if (cooldown.current || scanned) return;
-    cooldown.current = true;
-
-    const parsed = parseScan(data);
-    if (!parsed) {
-      setError(INVALID_QR_MESSAGE);
-      return;
-    }
-
-    // Issue #1050: require an explicit identity check before handing the
-    // scanned wallet to the donate screen, and surface the hook's failure
-    // reason instead of navigating silently when the prompt is cancelled.
-    const auth = await bio.authenticate('Confirm your identity to continue to donate');
-    if (!auth.success) {
-      setError(auth.error || 'Authentication failed. Scan again to retry.');
-      setTimeout(() => {
-        setError(null);
-        cooldown.current = false;
-      }, 3000);
-      return;
-    }
-
-    setScanned(true);
-
-    // Build the donate route with the scanned wallet as a query param.
+  const goToDonate = (parsed: { projectId?: string; wallet: string }) => {
     // The donate/[id] screen reads `wallet` from params to pre-fill the destination.
     const target = parsed.projectId
       ? `/donate/${parsed.projectId}?wallet=${encodeURIComponent(parsed.wallet)}`
@@ -130,8 +108,7 @@ export default function ScanScreen() {
       // immediately (the 500ms interval still suppresses repeat frames) so a
       // valid code right afterwards is accepted once the window elapses.
       gate.release();
-      setError('QR code is not a valid GreenPay wallet address. Try again.');
-      setTimeout(() => setError(null), 2000);
+      setError(INVALID_QR_MESSAGE);
       return;
     }
 
@@ -166,18 +143,22 @@ export default function ScanScreen() {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
         <Text style={[styles.message, { color: colors.text }]}>Camera access is required to scan QR codes.</Text>
-        <TouchableOpacity style={[styles.button, { backgroundColor: colors.buttonBackground }]} onPress={requestPermission}>
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: colors.buttonBackground }]}
+          onPress={requestPermission}
+          accessibilityRole="button"
+          accessibilityLabel="Grant camera permission"
+          accessibilityHint="Lets GreenPay use the camera to scan project QR codes"
+        >
           <Text style={[styles.buttonText, { color: colors.buttonText }]}>Grant Permission</Text>
         </TouchableOpacity>
-        {!permission.granted && (
-          <TouchableOpacity style={styles.button} onPress={requestPermission}>
-            <Text style={styles.buttonText}>Grant Permission</Text>
-          </TouchableOpacity>
-        )}
         {Platform.OS !== 'web' && (
           <TouchableOpacity
             style={[styles.button, styles.buttonSecondary, { backgroundColor: colors.secondaryText }]}
             onPress={() => Linking.openSettings()}
+            accessibilityRole="link"
+            accessibilityLabel="Open device settings"
+            accessibilityHint="Opens system settings so you can allow camera access"
           >
             <Text style={[styles.buttonText, { color: colors.buttonText }]}>Open Settings</Text>
           </TouchableOpacity>
@@ -189,7 +170,7 @@ export default function ScanScreen() {
   if (manualEntry) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.message}>Type address manually</Text>
+        <Text style={styles.message} accessibilityRole="header">Type address manually</Text>
         <TextInput
           style={styles.input}
           value={manualValue}
@@ -250,9 +231,12 @@ export default function ScanScreen() {
         <View style={styles.bottomOverlay}>
           {error ? (
             <TouchableOpacity
-              accessibilityRole="alert"
-              accessibilityLabel="Invalid QR code error. Tap to dismiss and resume scanning."
+              accessibilityRole="button"
+              accessibilityLiveRegion="assertive"
+              accessibilityLabel={`Invalid QR code error: ${error}`}
+              accessibilityHint="Dismisses the error and resumes scanning"
               onPress={dismissError}
+              style={styles.errorTouchable}
             >
               <Text style={styles.errorText}>{error}</Text>
             </TouchableOpacity>
@@ -267,7 +251,9 @@ export default function ScanScreen() {
           {scanned && (
             <TouchableOpacity
               style={[styles.button, { marginTop: 16, backgroundColor: colors.buttonBackground }]}
-              onPress={() => { setScanned(false); cooldown.current = false; }}
+              onPress={() => { setScanned(false); processingRef.current = false; gate.reset(); }}
+              accessibilityRole="button"
+              accessibilityLabel="Scan another QR code"
             >
               <Text style={[styles.buttonText, { color: colors.buttonText }]}>Scan Again</Text>
             </TouchableOpacity>
@@ -299,10 +285,13 @@ const styles = StyleSheet.create({
   button: {
     paddingHorizontal: 24,
     paddingVertical: 12,
+    minHeight: 44,
+    justifyContent: 'center',
     borderRadius: 10,
     marginTop: 8,
   },
   buttonSecondary: {},
+  errorTouchable: { minHeight: 44, justifyContent: 'center' },
   buttonText: {
     fontWeight: '700',
     fontSize: 15,
