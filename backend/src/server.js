@@ -225,7 +225,10 @@ async function startServer() {
 
   if (process.env.ENABLE_TURRETS === "true") {
     const turretsPort = process.env.TURRETS_PORT || 3001;
-    startTurretsServer(turretsPort);
+    // startTurretsServer returns { app, server } so the listener is closeable
+    // (tests and graceful shutdown). Keep the reference for future wiring.
+    const { server: turretsServer } = startTurretsServer(turretsPort);
+    void turretsServer;
   }
 }
 
