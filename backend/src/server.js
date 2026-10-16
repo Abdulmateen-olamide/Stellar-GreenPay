@@ -23,7 +23,11 @@ const { createCorsMiddleware, getAllowedOrigins } = require("./middleware/corsPo
 const { createRateLimiter } = require("./middleware/rateLimiter");
 const { metricsHandler, countRequest, startQueueRefresh } = require("./services/metrics");
 const { createSelectiveCsrf } = require("./middleware/selectiveCsrf");
+const { registerSocketHandlers } = require("./services/socketHandler");
 
+const healthRouter = require("./routes/health");
+const readinessRouter = require("./routes/readiness");
+const projectPreferredAssetRouter = require("./routes/projectPreferredAsset");
 const projectsRouter = require("./routes/projects");
 const uploadsRouter = require("./routes/uploads");
 const donationsRouter = require("./routes/donations");
@@ -32,6 +36,16 @@ const jobsRouter = require("./routes/jobs");
 const adminRouter = require("./routes/admin");
 const certificateRouter = require("./routes/certificate");
 const notificationsRouter = require("./routes/notifications");
+const impactRouter = require("./routes/impact");
+const subscriptionsRouter = require("./routes/subscriptions");
+const referralsRouter = require("./routes/referrals");
+const recurringDonationsRouter = require("./routes/recurringDonations");
+const authRouter = require("./routes/auth");
+const ratingsRouter = require("./routes/ratings");
+const commentsRouter = require("./routes/comments");
+const updatesRouter = require("./routes/updates");
+const teamsRouter = require("./routes/teams");
+const priceRouter = require("./routes/price");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -111,8 +125,6 @@ app.use(createSelectiveCsrf({
   ignoreMethods: ["GET", "HEAD", "OPTIONS"],
 }));
 
-const healthRouter = require("./routes/health");
-const readinessRouter = require("./routes/readiness");
 app.get("/metrics", metricsHandler);
 app.get("/api/metrics", metricsHandler);
 app.use("/health", healthRouter);
@@ -121,8 +133,8 @@ app.use("/api/v1/health", healthRouter);
 app.use("/api/readiness", readinessRouter);
 // Preferred receive asset for DEX path-payment donations (#1660). Mounted
 // before the projects router so its sub-path is matched here.
-app.use("/api/projects/:id/preferred-asset", require("./routes/projectPreferredAsset"));
-app.use("/api/v1/projects/:id/preferred-asset", require("./routes/projectPreferredAsset"));
+app.use("/api/projects/:id/preferred-asset", projectPreferredAssetRouter);
+app.use("/api/v1/projects/:id/preferred-asset", projectPreferredAssetRouter);
 app.use("/api/projects", projectsRouter);
 app.use("/api/v1/projects", projectsRouter);
 app.use("/api/uploads", uploadsRouter);
@@ -148,7 +160,6 @@ const io = new Server(server, {
 });
 app.set("io", io);
 
-const { registerSocketHandlers } = require("./services/socketHandler");
 registerSocketHandlers(io);
 
 app.use(createRateLimiter(150, 15, "global"));
@@ -165,34 +176,34 @@ app.get("/api/v1/csrf-token", csrfTokenHandler);
 // router's public /certificate/:slug share endpoint keeps single-segment paths.
 app.use("/api/impact/certificate", certificateRouter);
 app.use("/api/v1/impact/certificate", certificateRouter);
-app.use("/api/impact", require("./routes/impact"));
-app.use("/api/v1/impact", require("./routes/impact"));
-app.use("/api/subscriptions", require("./routes/subscriptions"));
-app.use("/api/v1/subscriptions", require("./routes/subscriptions"));
-app.use("/api/referrals", require("./routes/referrals"));
-app.use("/api/v1/referrals", require("./routes/referrals"));
+app.use("/api/impact", impactRouter);
+app.use("/api/v1/impact", impactRouter);
+app.use("/api/subscriptions", subscriptionsRouter);
+app.use("/api/v1/subscriptions", subscriptionsRouter);
+app.use("/api/referrals", referralsRouter);
+app.use("/api/v1/referrals", referralsRouter);
 // Recurring donation schedules are the source of truth for mobile (#1059):
 // the app reads them from here and treats AsyncStorage as an offline cache.
-app.use("/api/recurring-donations", require("./routes/recurringDonations"));
-app.use("/api/v1/recurring-donations", require("./routes/recurringDonations"));
+app.use("/api/recurring-donations", recurringDonationsRouter);
+app.use("/api/v1/recurring-donations", recurringDonationsRouter);
 // Wallet-signature authentication (challenge → signed tx → JWT).
-app.use("/api/auth", require("./routes/auth"));
-app.use("/api/v1/auth", require("./routes/auth"));
+app.use("/api/auth", authRouter);
+app.use("/api/v1/auth", authRouter);
 // Project ratings (donor-submitted, wallet-authenticated).
-app.use("/api/ratings", require("./routes/ratings"));
-app.use("/api/v1/ratings", require("./routes/ratings"));
+app.use("/api/ratings", ratingsRouter);
+app.use("/api/v1/ratings", ratingsRouter);
 // Donor comments on project pages (wallet-authenticated, moderated, rate limited).
-app.use("/api/comments", require("./routes/comments"));
-app.use("/api/v1/comments", require("./routes/comments"));
+app.use("/api/comments", commentsRouter);
+app.use("/api/v1/comments", commentsRouter);
 
-app.use("/api/updates", require("./routes/updates"));
-app.use("/api/v1/updates", require("./routes/updates"));
+app.use("/api/updates", updatesRouter);
+app.use("/api/v1/updates", updatesRouter);
 // Team giving (corporate/group donation profiles).
-app.use("/api/teams", require("./routes/teams"));
-app.use("/api/v1/teams", require("./routes/teams"));
+app.use("/api/teams", teamsRouter);
+app.use("/api/v1/teams", teamsRouter);
 // Price oracle endpoints (rates in USD, EUR, BRL)
-app.use("/api/price", require("./routes/price"));
-app.use("/api/v1/price", require("./routes/price"));
+app.use("/api/price", priceRouter);
+app.use("/api/v1/price", priceRouter);
 // Admin dashboard, audit log and moderation endpoints (dual-prefix like projects/donations).
 app.use("/api/admin", adminRouter);
 app.use("/api/v1/admin", adminRouter);
