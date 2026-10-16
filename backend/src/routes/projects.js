@@ -8,6 +8,7 @@ const router = express.Router();
 const { v4: uuid } = require("uuid");
 const QRCode = require("qrcode");
 const pool = require("../db/pool");
+const logger = require("../logger");
 const { logAdminAction } = require("../services/audit");
 const { mapProjectRow, mapProjectMilestoneRow, updateWebhook, computeBadges } = require("../services/store");
 const {
@@ -604,7 +605,7 @@ router.get("/:id/verify", async (req, res) => {
       },
     });
   } catch (err) {
-    console.error(`[verify] Error checking on-chain status for project ${req.params.id}:`, err);
+    logger.error({ event: "project_verify_onchain_error", projectId: req.params.id, err }, `[verify] Error checking on-chain status for project ${req.params.id}: ${err.message}`);
     res.status(500).json({
       success: false,
       error: "Failed to verify on-chain status",

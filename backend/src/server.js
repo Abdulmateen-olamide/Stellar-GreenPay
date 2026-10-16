@@ -79,7 +79,7 @@ if (process.env.NODE_ENV !== "production") {
     app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerDoc));
   } catch (err) {
     // Missing js-yaml/openapi must not crash require("../server") during tests
-    console.warn("[swagger] docs unavailable:", err.message);
+    logger.warn({ event: "swagger_docs_unavailable", err: err.message }, `[swagger] docs unavailable: ${err.message}`);
   }
 }
 

@@ -506,7 +506,7 @@ async function recordDonation(req, res, next) {
     res.status(201).json({ success: true, data: mapDonationRow(donationResult.rows[0]) });
   } catch (e) {
     if (inTransaction && client) await client.query("ROLLBACK");
-    console.error(e);
+    logger.error({ event: "donation_record_failed", err: e }, e.message);
     next(e);
   } finally {
     if (client) client.release();
