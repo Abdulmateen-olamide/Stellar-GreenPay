@@ -2,9 +2,10 @@
  * components/__tests__/ProjectImage.test.tsx
  *
  * Tests for #1069 — the cover-photo fallback used by `ProjectCard` and
- * the map popup. jsdom never fires a real `error` event for `<img>`, so
- * we drive `onError` with fireEvent, which is what the browser would do
- * on a 404 / unreachable upload.
+ * the map popup, plus #1588 — alt-text fallback rules.
+ * jsdom never fires a real `error` event for ``, so we drive `onError`
+ * with fireEvent, which is what the browser would do on a 404 / unreachable
+ * upload.
  */
 import { render, screen, fireEvent } from "@testing-library/react";
 import ProjectCard from "@/components/ProjectCard";
@@ -36,6 +37,91 @@ const mockProject: ClimateProject = {
 function cover(): HTMLImageElement {
   return screen.getByRole("img") as HTMLImageElement;
 }
+
+describe("ProjectImage alt-text rules (#1588)", () => {
+  it("uses description as alt text when provided", () => {
+    render(
+      <ProjectImage
+        src="https://example.com/img.png"
+        name="Amazon Reforestation"
+        description="Restoring native tree cover across degraded rainforest land."
+      />,
+    );
+    const img = screen.getByRole("img");
+    expect(img).toHaveAttribute(
+      "alt",
+      "Restoring native tree cover across degraded rainforest land.",
+    );
+    expect(img).not.toHaveAttribute("role");
+  });
+
+  it("falls back to project name when no description", () => {
+    render(
+      <ProjectImage
+        src="https://example.com/img.png"
+        name="Amazon Reforestation"
+      />,
+    );
+    const img = screen.getByRole("img");
+    expect(img).toHaveAttribute("alt", "Amazon Reforestation");
+    expect(img).not.toHaveAttribute("role");
+  });
+
+  it("uses explicit alt prop when provided", () => {
+    render(
+      <ProjectImage
+        src="https://example.com/img.png"
+        name="Amazon Reforestation"
+        description="Restoring native tree cover across degraded rainforest land."
+        alt="Custom alt text"
+      />,
+    );
+    const img = screen.getByRole("img");
+    expect(img).toHaveAttribute("alt", "Custom alt text");
+  });
+
+  it("decorative images get alt="" and role=presentation", () => {
+    render(
+      <ProjectImage
+        src="https://example.com/img.png"
+        name="Amazon Reforestation"
+        description="Restoring native tree cover across degraded rainforest land."
+        decorative
+      />,
+    );
+    const img = screen.getByRole("img");
+    expect(img).toHaveAttribute("alt", "");
+    expect(img).toHaveAttribute("role", "presentation");
+  });
+
+  it("placeholder gets alt="" and role=presentation when no src", () => {
+    render(
+      <ProjectImage
+        name="Amazon Reforestation"
+        description="Restoring native tree cover across degraded rainforest land."
+      />,
+    );
+    const img = screen.getByRole("img");
+    expect(img).toHaveAttribute("src", PROJECT_PLACEHOLDER_SRC);
+    expect(img).toHaveAttribute("alt", "");
+    expect(img).toHaveAttribute("role", "presentation");
+  });
+
+  it("placeholder is not announced as project-placeholder by screen readers", () => {
+    render(
+      <ProjectImage
+        name="Amazon Reforestation"
+        description="Restoring native tree cover across degraded rainforest land."
+      />,
+    );
+    const img = screen.getByRole("img");
+    expect(
+      screen.queryByRole("img", { name: /project-placeholder/i }),
+    ).not.toBeInTheDocument();
+    expect(img).toHaveAttribute("alt", "");
+    expect(img).toHaveAttribute("role", "presentation");
+  });
+});
 
 describe("ProjectImage", () => {
   it("renders the uploaded cover URL while it loads fine", () => {
