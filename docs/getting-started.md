@@ -9,13 +9,19 @@ Welcome! This guide will walk you step-by-step from zero to making your first te
 Before you begin, make sure you have the following installed:
 | Tool | Version |
 |------|---------|
-| Node.js | ≥ 18 |
+| Node.js | ≥ 20 |
 | npm | Latest |
 | Freighter Wallet | Browser extension |
 
 ### ✅ Node.js
 
-- Install Node.js (v18 or higher recommended)
+- Install Node.js **v20 or higher** — this is what the repo standardises on via `.nvmrc` (`20`) and the backend's `engines` requirement (`node >=20`). Staying on v18 will lead to unsupported builds.
+- If you use [nvm](https://github.com/nvm-sh/nvm), pin the correct version from the repo root with:
+
+```bash
+nvm install && nvm use
+```
+
 - Verify installation:
 
 ```
@@ -44,8 +50,8 @@ cd <your-project-folder>
 - ⚙️ Run Setup Script
 
 ```
-chmod +x setup-dev.sh
-./setup-dev.sh
+chmod +x scripts/setup-dev.sh
+./scripts/setup-dev.sh
 ```
 
 Start Backend
@@ -153,7 +159,7 @@ If you prefer to run services locally (or if the Docker Compose setup is problem
 
 - [PostgreSQL](https://www.postgresql.org/) **16**
 - [Redis](https://redis.io/) **7**
-- [Node.js](https://nodejs.org/) **≥ 18** and npm
+- [Node.js](https://nodejs.org/) **≥ 20** and npm (match `.nvmrc` with `nvm install && nvm use` from the repo root)
 
 ### 7.1 Install dependencies (per OS)
 
