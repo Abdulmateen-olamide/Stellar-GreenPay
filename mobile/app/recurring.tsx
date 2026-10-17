@@ -39,10 +39,10 @@ import {
   type RecurringDonation,
   type PaymentRecord,
 } from '../utils/recurringDonations';
+import { isValidStellarAddress } from '../utils/stellarValidation';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
 const MIN_AMOUNT_XLM = 1;
-const DONOR_ADDRESS_RE = /^G[A-Z0-9]{55}$/;
 
 interface ClimateProject {
   id: string;
@@ -152,7 +152,7 @@ export default function RecurringScreen() {
     create,
     cancel,
   } = useRecurringDonations({
-    donorAddress: DONOR_ADDRESS_RE.test(donorAddress) ? donorAddress : undefined,
+    donorAddress: isValidStellarAddress(donorAddress) ? donorAddress : undefined,
   });
   const donations = allDonations.filter((d) => d.status === 'active');
 
@@ -166,7 +166,7 @@ export default function RecurringScreen() {
   const showAmountError = setupAmount.trim() !== '' && !amountIsValid;
 
   useEffect(() => {
-    if (DONOR_ADDRESS_RE.test(donorAddress)) {
+    if (isValidStellarAddress(donorAddress)) {
       void refresh();
     }
   }, [donorAddress, refresh]);
@@ -234,7 +234,7 @@ export default function RecurringScreen() {
       projectName: project.name,
       amountXLM: setupAmount,
       durationMonths: null,
-      donorAddress: DONOR_ADDRESS_RE.test(donorAddress) ? donorAddress : undefined,
+      donorAddress: isValidStellarAddress(donorAddress) ? donorAddress : undefined,
     });
 
     setSetupAmount('');
