@@ -16,7 +16,7 @@ describe("ShareButtons", () => {
   afterEach(() => {
     jest.restoreAllMocks();
     delete process.env.NEXT_PUBLIC_APP_URL;
-    delete (navigator as Navigator & { clipboard?: Clipboard }).clipboard;
+    Reflect.deleteProperty(navigator, "clipboard");
   });
 
   it.each([
