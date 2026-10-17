@@ -30,7 +30,7 @@ describe("ReferralSection", () => {
     if (originalClipboard) {
       Object.defineProperty(navigator, "clipboard", originalClipboard);
     } else {
-      delete (navigator as Navigator & { clipboard?: Clipboard }).clipboard;
+      Reflect.deleteProperty(navigator, "clipboard");
     }
   });
 
