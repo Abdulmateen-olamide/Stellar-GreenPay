@@ -14,7 +14,7 @@
  */
 import { useRef, useState } from "react";
 import { useRouter } from "next/router";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, type ApplyTranslationSubkey, type TranslationKey } from "@/lib/i18n";
 import { PROJECT_CATEGORIES } from "@/utils/format";
 import {
   submitVerificationRequest,
@@ -84,7 +84,8 @@ function Field({
 export default function ApplyPage() {
   const router = useRouter();
   const { t } = useI18n();
-  const T = (key: string) => (t(`apply.${key}`) as string) || key;
+  const T = (key: ApplyTranslationSubkey) =>
+    t(`apply.${key}` as Extract<TranslationKey, `apply.${string}`>);
 
   const [step, setStep] = useState<Step>("org");
   const [submitting, setSubmitting] = useState(false);
@@ -572,12 +573,12 @@ export default function ApplyPage() {
           disabled={stepIndex === 0}
           className="btn-secondary disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {T("common.back") || "Back"}
+          {t("common.back")}
         </button>
 
         {step === "documents" ? (
           <button type="button" onClick={nextStep} className="btn-primary">
-            {T("common.next") || "Next"}
+            {t("common.next")}
           </button>
         ) : step === "review" ? (
           <button
@@ -590,7 +591,7 @@ export default function ApplyPage() {
           </button>
         ) : (
           <button type="button" onClick={nextStep} className="btn-primary">
-            {T("common.next") || "Next"}
+            {t("common.next")}
           </button>
         )}
       </div>
