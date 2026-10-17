@@ -3,7 +3,7 @@
  * Vertical timeline of merged pull requests, celebrating who shipped what.
  */
 import type { ContributorPR } from "@/utils/types";
-import { timeAgo } from "@/utils/format";
+import { formatDate, timeAgo } from "@/utils/format";
 
 interface ContributorTimelineProps {
   pullRequests: ContributorPR[];
@@ -19,7 +19,7 @@ export default function ContributorTimeline({
         <p className="font-display text-lg text-forest-900 mb-1">
           No merged contributions yet
         </p>
-        <p className="text-sm text-[#5a7a5a] dark:text-[#8aaa8a] font-body">
+        <p className="text-sm text-[var(--text-secondary)] dark:text-[#8aaa8a] font-body">
           Merged pull requests will appear here as contributors ship features.
         </p>
       </div>
@@ -31,7 +31,7 @@ export default function ContributorTimeline({
   );
 
   return (
-    <div className="card animate-fade-in">
+    <div className="card animate-fade-in motion-reduce:animate-none">
       <div className="relative">
         <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-forest-200" />
 
@@ -48,6 +48,7 @@ export default function ContributorTimeline({
                   className="relative z-10 flex-shrink-0"
                   title={pr.author.login}
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={pr.author.avatarUrl}
                     alt={`${pr.author.login}'s avatar`}
@@ -70,7 +71,7 @@ export default function ContributorTimeline({
                       >
                         {pr.title}
                       </a>
-                      <p className="text-sm text-[#5a7a5a] dark:text-[#8aaa8a] font-body mt-1">
+                      <p className="text-sm text-[var(--text-secondary)] dark:text-[#8aaa8a] font-body mt-1">
                         by{" "}
                         <a
                           href={pr.author.htmlUrl}
@@ -88,9 +89,9 @@ export default function ContributorTimeline({
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-3 mt-2 text-xs text-[#8aaa8a] dark:text-forest-300 font-body">
+                  <div className="flex items-center gap-3 mt-2 text-xs text-[var(--text-tertiary)] dark:text-forest-300 font-body">
                     <span title={timeAgo(pr.mergedAt)}>
-                      🎉 Merged {new Date(pr.mergedAt).toLocaleDateString()}
+                      🎉 Merged {formatDate(pr.mergedAt)}
                     </span>
                   </div>
                 </div>

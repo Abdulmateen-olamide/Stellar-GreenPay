@@ -2,7 +2,7 @@
  * components/ProjectRating.tsx
  */
 import { useState } from "react";
-import { csrfFetch } from "@/lib/api";
+import { submitProjectRating } from "@/lib/api";
 
 interface ProjectRatingProps {
   projectId: string;
@@ -27,26 +27,26 @@ export default function ProjectRating({ projectId, projectName, donorAddress, on
     setSubmitting(true);
     setError(null);
     try {
-      const res = await csrfFetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/v1/ratings`, {
-        method: "POST",
-        body: JSON.stringify({ projectId, donorAddress, rating, review }),
-      });
-      if (!res.ok) throw new Error("Failed to submit rating");
+      // The backend derives the donor address from the wallet-auth token
+      // and verifies the donation server-side — the body only carries the
+      // project id, stars, and review text.
+      await submitProjectRating({ projectId, stars: rating, reviewText: review || undefined });
       onSuccess();
     } catch (e: any) {
-      setError(e.message);
+      const msg = e?.response?.data?.error;
+      setError(msg || "Failed to submit rating");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-      <div className="card w-full max-w-md shadow-2xl animate-slide-up border border-forest-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in motion-reduce:animate-none">
+      <div className="card w-full max-w-md shadow-2xl animate-slide-up motion-reduce:animate-none border border-forest-100">
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-forest-100 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">⭐</div>
           <h2 className="font-display text-2xl font-bold text-forest-900">How was {projectName}?</h2>
-          <p className="text-sm text-[#5a7a5a] dark:text-[#8aaa8a] font-body mt-1">Your feedback helps others choose impactful projects.</p>
+          <p className="text-sm text-[var(--text-secondary)] dark:text-[#8aaa8a] font-body mt-1">Your feedback helps others choose impactful projects.</p>
         </div>
 
         <div className="flex justify-center gap-2 mb-6">
@@ -56,7 +56,7 @@ export default function ProjectRating({ projectId, projectName, donorAddress, on
               onMouseEnter={() => setHover(star)}
               onMouseLeave={() => setHover(0)}
               onClick={() => setRating(star)}
-              className="text-4xl transition-transform hover:scale-110 active:scale-95"
+              className="text-4xl transition-transform motion-reduce:transition-none hover:scale-110 active:scale-95"
             >
               <span className={(hover || rating) >= star ? "text-amber-400" : "text-gray-200"}>★</span>
             </button>
@@ -86,7 +86,7 @@ export default function ProjectRating({ projectId, projectName, donorAddress, on
           <button
             onClick={onCancel}
             disabled={submitting}
-            className="flex-1 px-5 py-3 rounded-xl text-sm font-semibold border border-forest-200 bg-white hover:bg-forest-50 transition-all text-[#5a7a5a] dark:text-[#8aaa8a]"
+            className="flex-1 px-5 py-3 rounded-xl text-sm font-semibold border border-forest-200 bg-white hover:bg-forest-50 transition-all motion-reduce:transition-none text-[var(--text-secondary)] dark:text-[#8aaa8a]"
           >
             Skip for now
           </button>

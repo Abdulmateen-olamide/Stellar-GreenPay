@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300" fill="none">
+  <rect width="400" height="300" fill="#f0f7f0"/>
+  <path d="M150 120L180 160L150 200" stroke="#227239" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M220 120L190 160L220 200" stroke="#227239" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="200" cy="90" r="25" fill="#227239"/>
+  <text x="200" y="240" font-family="sans-serif" font-size="14" fill="#227239" text-anchor="middle">Project Image</text>
+</svg>

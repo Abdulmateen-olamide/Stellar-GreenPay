@@ -73,7 +73,7 @@ const WalletAddressQRCode: React.FC<WalletAddressQRCodeProps> = ({
           id="wallet-qr-panel"
           role="region"
           aria-label={`QR code to donate to ${projectName}`}
-          className="mt-3 flex flex-col items-center gap-2 animate-fade-in"
+          className="mt-3 flex flex-col items-center gap-2 animate-fade-in motion-reduce:animate-none"
         >
           {/* White border so the QR has adequate quiet zone on coloured backgrounds */}
           <div className="bg-white p-2 rounded-lg shadow-sm border border-forest-100 inline-block">
@@ -86,12 +86,12 @@ const WalletAddressQRCode: React.FC<WalletAddressQRCodeProps> = ({
             />
           </div>
 
-          <p className="text-[11px] text-[#5a7a5a] font-body text-center leading-snug max-w-[200px]">
+          <p className="text-[11px] text-[var(--text-secondary)] font-body text-center leading-snug max-w-[200px]">
             Open <strong>Freighter</strong> or any Stellar wallet and scan to
             send XLM directly on-chain.
           </p>
 
-          <p className="text-[10px] text-[#8aaa8a] font-body font-mono break-all text-center max-w-[200px]">
+          <p className="text-[10px] text-[var(--text-tertiary)] font-body font-mono break-all text-center max-w-[200px]">
             {walletAddress}
           </p>
         </div>

@@ -82,7 +82,7 @@ async function buildVoteTransaction(voter: string, projectId: string, approve: b
         "vote_verify_project",
         new Address(voter).toScVal(),
         nativeToScVal(projectId, { type: "string" }),
-        nativeToScVal(approve, { type: "bool" }),
+        nativeToScVal(approve, { type: "bool" as any }),
       ),
     )
     .setTimeout(60)
@@ -314,7 +314,7 @@ export default function GovernancePage() {
                     </div>
                     <div className="h-2 w-full rounded-full bg-zinc-100 overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-forest-500 transition-all"
+                        className="h-full rounded-full bg-forest-500 transition-all motion-reduce:transition-none"
                         style={{ width: `${pct}%` }}
                       />
                     </div>

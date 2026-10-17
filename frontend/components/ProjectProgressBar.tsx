@@ -1,4 +1,5 @@
 import React from "react";
+import { formatAmount } from "@/utils/format";
 
 interface ProjectProgressBarProps {
   raisedXLM: string | number;
@@ -25,12 +26,12 @@ export default function ProjectProgressBar({
           {hasGoal ? `${percentage}%` : "No goal set"}
         </span>
         {hasGoal ? (
-          <span className="text-xs text-[#5a7a5a] dark:text-[#a8c2a8]">
-            {parsedRaised.toLocaleString()} / {parsedGoal.toLocaleString()} XLM
+          <span className="text-xs text-[var(--text-secondary)] dark:text-[#a8c2a8]">
+            {formatAmount(parsedRaised, 0)} / {formatAmount(parsedGoal, 0)} XLM
           </span>
         ) : (
-          <span className="text-xs text-[#8aaa8a] dark:text-[#a8c2a8]">
-            Raised: {parsedRaised.toLocaleString()} XLM
+          <span className="text-xs text-[var(--text-tertiary)] dark:text-[#a8c2a8]">
+            Raised: {formatAmount(parsedRaised, 0)} XLM
           </span>
         )}
       </div>
@@ -45,7 +46,7 @@ export default function ProjectProgressBar({
         aria-valuetext={hasGoal ? `${percentage}% complete` : "No goal set"}
       >
         <div
-          className="h-full rounded-full bg-emerald-500 transition-all duration-300 dark:bg-emerald-400"
+          className="h-full rounded-full bg-emerald-500 transition-all motion-reduce:transition-none duration-300 dark:bg-emerald-400"
           style={{ width: `${hasGoal ? percentage : 0}%` }}
         />
       </div>

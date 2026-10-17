@@ -1,6 +1,11 @@
 import { useMemo, useState } from "react";
-import { createMonthlySubscription, loadMonthlySubscriptions } from "@/lib/monthlyGiving";
-import { formatXLM, timeAgo } from "@/utils/format";
+import { createRecurringDonation } from "@/lib/api";
+import {
+  MIN_MONTHLY_AMOUNT_XLM,
+  createMonthlySubscription,
+  loadMonthlySubscriptions,
+} from "@/lib/monthlyGiving";
+import { formatDate, formatXLM, timeAgo } from "@/utils/format";
 import type { MonthlySubscription } from "@/utils/types";
 
 interface MonthlyGivingSetupProps {
@@ -8,6 +13,8 @@ interface MonthlyGivingSetupProps {
   projectName: string;
   onClose: () => void;
   onCreated?: (subscriptionId: string) => void;
+  /** Connected donor wallet; when present the pledge is also saved to the backend. */
+  donorAddress?: string | null;
 }
 
 const DURATION_OPTIONS = [
@@ -22,11 +29,14 @@ export default function MonthlyGivingSetup({
   projectName,
   onClose,
   onCreated,
+  donorAddress,
 }: MonthlyGivingSetupProps) {
   const [amountXLM, setAmountXLM] = useState("25");
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [duration, setDuration] = useState("3");
   const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   // Reading localStorage synchronously and filtering by projectId is pure
   // derivation, not a synchronization with an external system that changes
@@ -39,7 +49,7 @@ export default function MonthlyGivingSetup({
 
   const canCreate = useMemo(() => {
     const amount = Number.parseFloat(amountXLM);
-    if (!Number.isFinite(amount) || amount < 1) return false;
+    if (!Number.isFinite(amount) || amount < MIN_MONTHLY_AMOUNT_XLM) return false;
     if (!startDate) return false;
     return true;
   }, [amountXLM, startDate]);
@@ -50,16 +60,44 @@ export default function MonthlyGivingSetup({
       return;
     }
     setError(null);
+    setConfirming(true);
+  };
+
+  const confirmCreate = async () => {
+    if (submitting) return;
+
+    const amount = Number.parseFloat(amountXLM);
     const durationMonths = duration === "indefinite" ? null : Number.parseInt(duration, 10);
-    const created = createMonthlySubscription({
-      projectId,
-      projectName,
-      amountXLM: Number.parseFloat(amountXLM).toFixed(7),
-      startDate: new Date(startDate).toISOString(),
-      durationMonths,
-    });
-    onCreated?.(created.id);
-    onClose();
+    setError(null);
+    setSubmitting(true);
+
+    try {
+      // Backend pledges require a fixed duration, so indefinite giving stays
+      // local-only until it is cancelled.
+      if (donorAddress && durationMonths !== null) {
+        await createRecurringDonation({
+          donorAddress,
+          projectId,
+          amountXlm: amount,
+          durationMonths,
+          startDate,
+        });
+      }
+
+      const created = createMonthlySubscription({
+        projectId,
+        projectName,
+        amountXLM: amount.toFixed(7),
+        startDate: new Date(startDate).toISOString(),
+        durationMonths,
+      });
+      onCreated?.(created.id);
+      onClose();
+    } catch {
+      setError("Could not save your monthly pledge. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -70,14 +108,15 @@ export default function MonthlyGivingSetup({
           <button onClick={onClose} className="btn-secondary text-xs py-1.5 px-3">Close</button>
         </div>
 
-        <p className="text-sm text-[#5a7a5a] dark:text-[#8aaa8a] font-body mb-5">
+        <p className="text-sm text-[var(--text-secondary)] dark:text-[#8aaa8a] font-body mb-5">
           Schedule recurring monthly donations for <strong>{projectName}</strong>.
         </p>
 
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="label">Amount (XLM)</label>
+            <label className="label" htmlFor="monthly-giving-amount">Amount (XLM)</label>
             <input
+              id="monthly-giving-amount"
               type="number"
               min="1"
               step="1"
@@ -87,8 +126,9 @@ export default function MonthlyGivingSetup({
             />
           </div>
           <div>
-            <label className="label">Start Date</label>
+            <label className="label" htmlFor="monthly-giving-start-date">Start Date</label>
             <input
+              id="monthly-giving-start-date"
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
@@ -127,10 +167,47 @@ export default function MonthlyGivingSetup({
           Save Monthly Giving
         </button>
 
+        {confirming && (
+          <div className="fixed inset-0 z-[60] bg-black/40 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="monthly-giving-confirmation-title">
+            <div className="w-full max-w-md card bg-white p-6">
+              <h4 id="monthly-giving-confirmation-title" className="font-display text-lg font-semibold text-forest-900">
+                Confirm monthly giving
+              </h4>
+              <p className="mt-3 text-sm text-[#5a7a5a] dark:text-[#8aaa8a] font-body">
+                You are setting up a monthly donation of <strong>{formatXLM(Number.parseFloat(amountXLM) || 0)}</strong> to <strong>{projectName}</strong>.
+              </p>
+              <dl className="mt-4 space-y-2 text-sm font-body text-forest-800">
+                <div className="flex justify-between"><dt>Next charge</dt><dd>{formatDate(startDate)}</dd></div>
+                <div className="flex justify-between"><dt>Estimated annual total</dt><dd>{formatXLM((Number.parseFloat(amountXLM) || 0) * 12)}</dd></div>
+                <div className="flex justify-between"><dt>Duration</dt><dd>{DURATION_OPTIONS.find((option) => option.value === duration)?.label}</dd></div>
+              </dl>
+              {error && <p className="mt-3 text-sm text-red-600 font-body" role="alert">{error}</p>}
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setConfirming(false)}
+                  disabled={submitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary disabled:opacity-60"
+                  onClick={confirmCreate}
+                  disabled={submitting}
+                >
+                  {submitting ? "Saving…" : "Continue"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mt-8 border-t border-forest-100 pt-5">
           <h4 className="font-display text-lg font-semibold text-forest-900 mb-3">Subscription History</h4>
           {subscriptions.length === 0 ? (
-            <p className="text-sm text-[#5a7a5a] dark:text-[#8aaa8a] font-body">No subscriptions created for this project yet.</p>
+            <p className="text-sm text-[var(--text-secondary)] dark:text-[#8aaa8a] font-body">No subscriptions created for this project yet.</p>
           ) : (
             <div className="space-y-3">
               {subscriptions.map((sub) => (
@@ -138,19 +215,19 @@ export default function MonthlyGivingSetup({
                   <p className="text-sm font-semibold text-forest-900 font-body">
                     {formatXLM(sub.amountXLM)} monthly · {sub.status}
                   </p>
-                  <p className="text-xs text-[#8aaa8a] dark:text-forest-300 font-body mt-1">
-                    Next due: {new Date(sub.nextDueDate).toLocaleDateString()}
+                  <p className="text-xs text-[var(--text-tertiary)] dark:text-forest-300 font-body mt-1">
+                    Next due: {formatDate(sub.nextDueDate)}
                   </p>
                   {sub.history.length > 0 ? (
                     <div className="mt-2 space-y-1">
                       {sub.history.slice(0, 5).map((entry) => (
-                        <p key={entry.paidAt} className="text-xs text-[#5a7a5a] dark:text-[#8aaa8a] font-body">
+                        <p key={entry.paidAt} className="text-xs text-[var(--text-secondary)] dark:text-[#8aaa8a] font-body">
                           Paid {formatXLM(entry.amountXLM)} · {timeAgo(entry.paidAt)}
                         </p>
                       ))}
                     </div>
                   ) : (
-                    <p className="mt-2 text-xs text-[#5a7a5a] dark:text-[#8aaa8a] font-body">No paid months yet.</p>
+                    <p className="mt-2 text-xs text-[var(--text-secondary)] dark:text-[#8aaa8a] font-body">No paid months yet.</p>
                   )}
                 </div>
               ))}

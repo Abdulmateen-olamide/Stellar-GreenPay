@@ -1,4 +1,4 @@
-"use strict";
+"strict";
 
 /**
  * Tests for the Soroban transaction parsing helper
@@ -21,10 +21,12 @@ const {
   getRegisteredProjectIdFromTransaction,
   CONTRACT_ID,
   NETWORK_PASSPHRASE,
+  STELLAR_TIMEOUT_MS,
+  isStellarTimeoutError,
 } = require("./stellar");
 
 const ADMIN = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF";
-const WALLET = "GBQQMBRVDJIBWVJYEYYOEL33BKBL24HRUNMQ6UM2TBEAHXI6E4NILEJL";
+const WALLET = "GAMS33ECMNTDREB6WRWHSO46MPP2BX7ESHFSXR2DOQRXUCLXUHRSXCL3";
 const OTHER_CONTRACT = sdk.StrKey.encodeContract(Buffer.alloc(32, 9));
 
 /**
@@ -73,11 +75,10 @@ function buildProjRegMeta({
   topic = "proj_reg",
 }) {
   const event = new sdk.xdr.ContractEvent({
-    ext: new sdk.xdr.ExtensionPoint(0),
-    contractId: sdk.StrKey.decodeContract(contractId),
-    type: sdk.xdr.ContractEventType.contract(),
-    body: new sdk.xdr.ContractEventBody(
-      0,
+    ext: sdk.xdr.ExtensionPoint.v0(),
+    contractId: new sdk.xdr.Hash(sdk.StrKey.decodeContract(contractId)),
+    type: sdk.xdr.ContractEventType.contract,
+    body: sdk.xdr.ContractEventBody.v0(
       new sdk.xdr.ContractEventV0({
         topics: [sdk.xdr.ScVal.scvSymbol(topic), sdk.Address.fromString(ADMIN).toScVal()],
         data: sdk.xdr.ScVal.scvString(projectId),
@@ -85,15 +86,14 @@ function buildProjRegMeta({
     ),
   });
 
-  const meta = new sdk.xdr.TransactionMeta(
-    3,
+  const meta = sdk.xdr.TransactionMeta.v3(
     new sdk.xdr.TransactionMetaV3({
-      ext: new sdk.xdr.ExtensionPoint(0),
+      ext: sdk.xdr.ExtensionPoint.v0(),
       txChangesBefore: [],
       operations: [],
       txChangesAfter: [],
       sorobanMeta: new sdk.xdr.SorobanTransactionMeta({
-        ext: new sdk.xdr.SorobanTransactionMetaExt(0),
+        ext: sdk.xdr.SorobanTransactionMetaExt.v0(),
         events: [event],
         returnValue: sdk.xdr.ScVal.scvVoid(),
         diagnosticEvents: [],
@@ -179,10 +179,9 @@ describe("getRegisteredProjectIdFromTransaction", () => {
     const tx = {
       successful: true,
       envelope_xdr: buildRegisterEnvelope({ projectId: "proj-1" }),
-      result_meta_xdr: new sdk.xdr.TransactionMeta(
-        3,
+      result_meta_xdr: sdk.xdr.TransactionMeta.v3(
         new sdk.xdr.TransactionMetaV3({
-          ext: new sdk.xdr.ExtensionPoint(0),
+          ext: sdk.xdr.ExtensionPoint.v0(),
           txChangesBefore: [],
           operations: [],
           txChangesAfter: [],
@@ -196,5 +195,40 @@ describe("getRegisteredProjectIdFromTransaction", () => {
   test("returns null when no XDR is present or the transaction is missing", () => {
     expect(getRegisteredProjectIdFromTransaction({ successful: true })).toBeNull();
     expect(getRegisteredProjectIdFromTransaction(null)).toBeNull();
+  });
+});
+
+describe("Horizon / Soroban request timeout (issue #1097)", () => {
+  test("bounds outbound requests instead of letting them hang", () => {
+    expect(STELLAR_TIMEOUT_MS).toBe(15000);
+    // Config.setTimeout only reaches Federation + stellar.toml, so the two
+    // axios clients that actually serve chain calls must be bounded too.
+    expect(sdk.Config.getTimeout()).toBe(STELLAR_TIMEOUT_MS);
+    if (sdk.Horizon?.AxiosClient?.defaults) {
+      expect(sdk.Horizon.AxiosClient.defaults.timeout).toBe(STELLAR_TIMEOUT_MS);
+    }
+    if (sdk.rpc?.AxiosClient?.defaults) {
+      expect(sdk.rpc.AxiosClient.defaults.timeout).toBe(STELLAR_TIMEOUT_MS);
+    }
+  });
+
+  test("recognises the shapes the SDK and axios actually throw", () => {
+    const axiosTimeout = Object.assign(new Error("timeout of 15000ms exceeded"), {
+      code: "ECONNABORTED",
+    });
+    expect(isStellarTimeoutError(axiosTimeout)).toBe(true);
+    expect(isStellarTimeoutError({ code: "ETIMEDOUT" })).toBe(true);
+    expect(isStellarTimeoutError({ name: "TimeoutError" })).toBe(true);
+    expect(isStellarTimeoutError(new Error("Request timed out"))).toBe(true);
+  });
+
+  test("does not misreport other chain failures as timeouts", () => {
+    // A 404 from Horizon must keep surfacing as its own status, not a retryable
+    // 503 from the central error handler.
+    expect(isStellarTimeoutError(new Error("Request failed with status code 404"))).toBe(false);
+    expect(isStellarTimeoutError({ code: "ECONNREFUSED" })).toBe(false);
+    expect(isStellarTimeoutError(new Error("bad network passphrase"))).toBe(false);
+    expect(isStellarTimeoutError(null)).toBe(false);
+    expect(isStellarTimeoutError("ECONNABORTED")).toBe(false);
   });
 });

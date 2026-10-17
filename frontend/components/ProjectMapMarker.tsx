@@ -4,6 +4,8 @@
  * A Leaflet Marker for a single ClimateProject rendered inside a
  * react-leaflet MapContainer.  Clicking the marker opens a Leaflet Popup
  * containing a mini project card with:
+ *   - Cover photo (only when the project has one), falling back to the
+ *     branded placeholder if the upload can't be loaded (#1069)
  *   - Project name, category icon, and location
  *   - Raised / Goal progress bar
  *   - Raised XLM amount
@@ -14,10 +16,12 @@
  * with ssr:false.
  */
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import { Marker, Popup } from "react-leaflet";
-import type { LatLngExpression } from "leaflet";
+import type { LatLngExpression, Marker as LeafletMarker } from "leaflet";
 import type { ClimateProject } from "@/utils/types";
 import { formatXLM, progressPercent, CATEGORY_ICONS } from "@/utils/format";
+import ProjectImage from "./ProjectImage";
 
 interface ProjectMapMarkerProps {
   project: ClimateProject;
@@ -25,11 +29,36 @@ interface ProjectMapMarkerProps {
 }
 
 export default function ProjectMapMarker({ project, position }: ProjectMapMarkerProps) {
+  const markerRef = useRef<LeafletMarker | null>(null);
   const pct = Math.min(progressPercent(project.raisedXLM, project.goalXLM), 100);
   const icon = CATEGORY_ICONS[project.category] ?? "🌿";
 
+  useEffect(() => {
+    const markerElement = markerRef.current?.getElement();
+    if (!markerElement) return;
+
+    markerElement.tabIndex = 0;
+    markerElement.setAttribute("role", "button");
+    markerElement.setAttribute(
+      "aria-label",
+      `${project.name}, ${formatXLM(project.raisedXLM, 0)} XLM raised. Press Enter or Space to view project details.`,
+    );
+    const openPopup = (event: KeyboardEvent) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      markerRef.current?.openPopup();
+    };
+    markerElement.addEventListener("keydown", openPopup);
+    return () => markerElement.removeEventListener("keydown", openPopup);
+  }, [project.name, project.raisedXLM]);
+
   return (
-    <Marker position={position}>
+    <Marker
+      ref={markerRef}
+      position={position}
+      keyboard
+      title={`${project.name} — ${formatXLM(project.raisedXLM, 0)} XLM raised`}
+    >
       <Popup
         // Keep popup open on hover, close on click-outside
         closeButton={true}
@@ -40,6 +69,17 @@ export default function ProjectMapMarker({ project, position }: ProjectMapMarker
       >
         {/* Mini project card ------------------------------------------------ */}
         <div className="flex flex-col gap-2 p-0.5" role="region" aria-label={`Project: ${project.name}`}>
+          {/* Cover photo — only when the project has one, so projects
+              without an upload don't show a wall of placeholders. */}
+          {project.imageUrl ? (
+            <ProjectImage
+              src={project.imageUrl}
+              name={project.name}
+              alt={project.name}
+              className="w-full h-24 object-cover rounded-lg border border-forest-100"
+            />
+          ) : null}
+
           {/* Header: icon + name */}
           <div className="flex items-start gap-2">
             <span className="text-xl leading-none mt-0.5" aria-hidden="true">
@@ -66,13 +106,13 @@ export default function ProjectMapMarker({ project, position }: ProjectMapMarker
               aria-label={`${pct.toFixed(0)}% funded`}
             >
               <div
-                className="h-full rounded-full bg-forest-500 transition-all duration-500"
+                className="h-full rounded-full bg-forest-500 transition-all motion-reduce:transition-none duration-500"
                 style={{ width: `${pct}%` }}
               />
             </div>
             <div className="flex items-center justify-between text-[11px] text-forest-600 font-body">
               <span className="font-semibold">{formatXLM(project.raisedXLM, 0)} raised</span>
-              <span className="text-forest-400">{pct.toFixed(0)}%</span>
+              <span className="text-[var(--text-secondary)] dark:text-forest-400">{pct.toFixed(0)}%</span>
             </div>
           </div>
 

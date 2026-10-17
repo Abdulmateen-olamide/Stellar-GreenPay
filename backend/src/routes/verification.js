@@ -31,7 +31,8 @@ const express = require("express");
 const router = express.Router();
 const { v4: uuid } = require("uuid");
 const pool = require("../db/pool");
-const { adminRequired } = require("../middleware/auth");
+const logger = require("../logger");
+const { adminRequired, adminTokenRequired } = require("../middleware/auth");
 const { logAdminAction } = require("../services/audit");
 const { createRateLimiter } = require("../middleware/rateLimiter");
 const { sendAdminVerificationNotification, sendVerificationStatusNotification } = require("../services/email");
@@ -276,8 +277,10 @@ router.post("/", submitLimiter, async (req, res, next) => {
     // Fire-and-forget admin notification; failures here must NOT block the
     // persist + 201 success path. The submitter still gets their receipt.
     sendAdminVerificationNotification(created).catch((err) => {
-      // eslint-disable-next-line no-console
-      console.error("[verification] admin notification failed:", err.message);
+      logger.error(
+        { event: "verification_admin_notification_failed", requestId: created.id, err: err.message },
+        "[verification] admin notification failed",
+      );
     });
 
     res.status(201).json({
@@ -479,7 +482,7 @@ router.get("/", adminRequired, async (req, res, next) => {
  * PATCH /api/verification-requests/:id/status
  * Admin only. Transitions the row's status and records reviewer notes.
  */
-router.patch("/:id/status", adminRequired, async (req, res, next) => {
+router.patch("/:id/status", adminTokenRequired, async (req, res, next) => {
   try {
     const { status, reviewerNotes, reviewedBy } = req.body || {};
     if (!status || !Object.keys(VALID_TRANSITIONS).includes(status)) {
@@ -533,8 +536,10 @@ router.patch("/:id/status", adminRequired, async (req, res, next) => {
     // NOT block the PATCH success response.
     if (["approved", "rejected", "in_review"].includes(status)) {
       sendVerificationStatusNotification(updatedRow, status).catch((err) => {
-        // eslint-disable-next-line no-console
-        console.error("[verification] status-change notification failed:", err.message);
+        logger.error(
+          { event: "verification_status_notification_failed", requestId: updatedRow.id, status, err: err.message },
+          "[verification] status-change notification failed",
+        );
       });
     }
 
@@ -549,7 +554,7 @@ router.patch("/:id/status", adminRequired, async (req, res, next) => {
  * Admin only. Hard-deletes spam or test submissions.
  * Only pending or rejected rows may be deleted (not approved / in_review).
  */
-router.delete("/:id", adminRequired, async (req, res, next) => {
+router.delete("/:id", adminTokenRequired, async (req, res, next) => {
   try {
     const existing = await pool.query("SELECT * FROM verification_requests WHERE id = $1", [
       req.params.id,

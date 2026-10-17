@@ -11,10 +11,6 @@ import * as SecureStore from 'expo-secure-store';
 // The fixtures below define the only "valid" address the tests exercise.
 const TEST_VALID_PUBLIC_KEY =
   'GABCXYZ1234567890123456789012345678901234567890123456789012345';
-jest.mock('@stellar/stellar-sdk', () => ({
-  StrKey: {
-    isValidEd25519PublicKey: (key: unknown) => key === TEST_VALID_PUBLIC_KEY,
-
 // useWallet.ts imports `StrKey` from `@stellar/stellar-sdk` at module-load
 // time. The real package pulls axios into Horizon-baked call paths and
 // breaks under jest-expo@57's jsdom-light env. We only need the one method
@@ -146,7 +142,9 @@ describe('useWallet', () => {
     expect(connectResult).toBe(false);
     expect(SecureStore.setItemAsync).not.toHaveBeenCalled();
     expect(result.current.publicKey).toBe(null);
-    expect(result.current.error).toBe('Invalid Stellar address. Must start with G and be 56 characters.');
+    expect(result.current.error).toBe(
+      'Invalid Stellar address. Must be a valid 56-character Stellar public key (G…).',
+    );
   });
 
   it('rejects public key that is too short', async () => {
@@ -164,7 +162,9 @@ describe('useWallet', () => {
     });
     
     expect(connectResult).toBe(false);
-    expect(result.current.error).toBe('Invalid Stellar address. Must start with G and be 56 characters.');
+    expect(result.current.error).toBe(
+      'Invalid Stellar address. Must be a valid 56-character Stellar public key (G…).',
+    );
   });
 
   it('rejects public key that does not start with G', async () => {
@@ -184,7 +184,9 @@ describe('useWallet', () => {
     });
     
     expect(connectResult).toBe(false);
-    expect(result.current.error).toBe('Invalid Stellar address. Must start with G and be 56 characters.');
+    expect(result.current.error).toBe(
+      'Invalid Stellar address. Must be a valid 56-character Stellar public key (G…).',
+    );
   });
 
   it('clears previous error when attempting new connection', async () => {

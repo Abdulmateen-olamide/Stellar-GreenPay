@@ -46,7 +46,7 @@ export default function ProjectsPage() {
     if (searchQuery && !search) {
       setSearch(searchQuery);
     }
-  }, [searchQuery]);
+  }, [searchQuery, search, setSearch]);
 
   // Click outside listener for autocomplete
   useEffect(() => {
@@ -57,7 +57,7 @@ export default function ProjectsPage() {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [setIsAutocompleteOpen]);
 
   // Debounced search effect
   useEffect(() => {
@@ -124,7 +124,7 @@ export default function ProjectsPage() {
       }, 500);
       return () => clearTimeout(timer);
     },
-    [router, router.query, setSearch],
+    [router, setSearch],
   );
 
   const handleSelectTag = (tag: string) => {
@@ -153,14 +153,14 @@ export default function ProjectsPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 animate-fade-in">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 animate-fade-in motion-reduce:animate-none">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="font-display text-3xl font-bold text-forest-900 mb-1">
             Climate Projects
           </h1>
-          <p className="text-[#5a7a5a] dark:text-[#8aaa8a] text-sm font-body">
+          <p className="text-[var(--text-secondary)] dark:text-[#8aaa8a] text-sm font-body">
             {loading
               ? "Loading..."
               : `${projects.length} verified project${projects.length !== 1 ? "s" : ""}`}
@@ -173,7 +173,7 @@ export default function ProjectsPage() {
         <button
           onClick={() => setFilter("category", "")}
           className={clsx(
-            "px-3 py-1.5 rounded-full text-sm font-medium border transition-all font-body",
+            "px-3 py-1.5 rounded-full text-sm font-medium border transition-all motion-reduce:transition-none font-body",
             !category
               ? "bg-forest-500 text-white border-forest-500"
               : "bg-white text-forest-700 border-forest-200 hover:border-forest-400"
@@ -186,7 +186,7 @@ export default function ProjectsPage() {
             key={cat}
             onClick={() => setFilter("category", cat)}
             className={clsx(
-              "px-3 py-1.5 rounded-full text-sm font-medium border transition-all font-body flex items-center gap-1.5",
+              "px-3 py-1.5 rounded-full text-sm font-medium border transition-all motion-reduce:transition-none font-body flex items-center gap-1.5",
               category === cat
                 ? "bg-forest-500 text-white border-forest-500"
                 : "bg-white text-forest-700 border-forest-200 hover:border-forest-400"
@@ -201,7 +201,7 @@ export default function ProjectsPage() {
       {/* Active filter summary */}
       {(category || status !== "active" || verified || search) && (
         <div className="flex flex-wrap items-center gap-2 mb-4">
-          <span className="text-xs text-[#8aaa8a] dark:text-forest-300 font-body">Active filters:</span>
+          <span className="text-xs text-[var(--text-tertiary)] dark:text-forest-300 font-body">Active filters:</span>
           {category && (
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-forest-100 text-forest-700 text-xs font-body">
               {CATEGORY_ICONS[category]} {category}
@@ -231,7 +231,7 @@ export default function ProjectsPage() {
 
       {/* Search */}
       <div className="relative mb-6" ref={searchRef}>
-        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8aaa8a] dark:text-forest-300 z-10">
+        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] dark:text-forest-300 z-10">
           🔍
         </span>
         <input
@@ -258,7 +258,7 @@ export default function ProjectsPage() {
           <ul
             id="tag-autocomplete-list"
             role="listbox"
-            className="absolute top-full left-0 right-0 mt-2 bg-white border border-forest-200 rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in"
+            className="absolute top-full left-0 right-0 mt-2 bg-white border border-forest-200 rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in motion-reduce:animate-none"
           >
             {autocompleteResults.map((tag, i) => (
               <li
@@ -299,7 +299,7 @@ export default function ProjectsPage() {
                     "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors font-body",
                     status === val
                       ? "bg-forest-100 text-forest-700 font-semibold"
-                      : "text-[#5a7a5a] dark:text-[#8aaa8a] hover:bg-forest-50 hover:text-forest-700",
+                      : "text-[var(--text-secondary)] dark:text-[#8aaa8a] hover:bg-forest-50 hover:text-forest-700",
                   )}
                 >
                   {lab}
@@ -316,7 +316,7 @@ export default function ProjectsPage() {
                 "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors font-body",
                 verified
                   ? "bg-forest-100 text-forest-700"
-                  : "text-[#5a7a5a] dark:text-[#8aaa8a] hover:bg-forest-50 hover:text-forest-700",
+                  : "text-[var(--text-secondary)] dark:text-[#8aaa8a] hover:bg-forest-50 hover:text-forest-700",
               )}
             >
               {/* Toggle Switch */}
@@ -328,14 +328,14 @@ export default function ProjectsPage() {
               >
                 <div
                   className={clsx(
-                    "absolute top-1 w-4 h-4 rounded-full bg-white transition-all",
+                    "absolute top-1 w-4 h-4 rounded-full bg-white transition-all motion-reduce:transition-none",
                     verified ? "right-1" : "left-1",
                   )}
                 />
               </div>
               <span className="flex-1 text-left">
                 ✓ Verified only{" "}
-                <span className="text-xs text-[#8aaa8a] dark:text-forest-300">
+                <span className="text-xs text-[var(--text-tertiary)] dark:text-forest-300">
                   ({projects.filter((p) => p.verified).length})
                 </span>
               </span>
@@ -351,7 +351,7 @@ export default function ProjectsPage() {
                   "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors font-body",
                   !category
                     ? "bg-forest-100 text-forest-700 font-semibold"
-                    : "text-[#5a7a5a] dark:text-[#8aaa8a] hover:bg-forest-50 hover:text-forest-700",
+                    : "text-[var(--text-secondary)] dark:text-[#8aaa8a] hover:bg-forest-50 hover:text-forest-700",
                 )}
               >
                 All Categories
@@ -364,7 +364,7 @@ export default function ProjectsPage() {
                     "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors font-body flex items-center gap-2",
                     category === cat
                       ? "bg-forest-100 text-forest-700 font-semibold"
-                      : "text-[#5a7a5a] dark:text-[#8aaa8a] hover:bg-forest-50 hover:text-forest-700",
+                      : "text-[var(--text-secondary)] dark:text-[#8aaa8a] hover:bg-forest-50 hover:text-forest-700",
                   )}
                 >
                   <span>{CATEGORY_ICONS[cat]}</span>
@@ -404,7 +404,7 @@ export default function ProjectsPage() {
               <p className="font-display text-xl text-forest-900 mb-2">
                 {search ? `No results for "${search}"` : "No projects found"}
               </p>
-              <p className="text-[#5a7a5a] dark:text-[#8aaa8a] text-sm font-body">
+              <p className="text-[var(--text-secondary)] dark:text-[#8aaa8a] text-sm font-body">
                 {search
                   ? "Try a different search"
                   : "Try adjusting your filters"}

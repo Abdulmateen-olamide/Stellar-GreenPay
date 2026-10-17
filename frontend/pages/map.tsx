@@ -17,6 +17,7 @@ import Link from "next/link";
 import type { GetServerSideProps } from "next";
 import type { ClimateProject } from "@/utils/types";
 import { fetchProjects } from "@/lib/api";
+import { formatTime } from "@/utils/format";
 import { useI18n } from "@/lib/i18n";
 
 // ── Dynamic import — Leaflet requires a real browser environment ───────────────
@@ -27,7 +28,7 @@ const ProjectMap = dynamic(
     loading: () => (
       <div className="flex h-full w-full items-center justify-center bg-forest-50">
         <div className="flex flex-col items-center gap-3 text-forest-600">
-          <span className="text-3xl animate-spin">🌍</span>
+          <span className="text-3xl animate-spin motion-reduce:animate-none">🌍</span>
           <span className="text-sm font-body">Loading map…</span>
         </div>
       </div>
@@ -79,14 +80,15 @@ export default function MapPage({ projects, fetchedAt }: MapPageProps) {
           <div className="flex items-center gap-2">
             {/* Project count badge */}
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-forest-100 text-forest-700 text-xs font-body font-semibold border border-forest-200">
-              <span className="w-1.5 h-1.5 rounded-full bg-forest-500 animate-pulse" aria-hidden="true" />
+              <span className="w-1.5 h-1.5 rounded-full bg-forest-500 animate-pulse motion-reduce:animate-none" aria-hidden="true" />
               {activeCount} {t("map.activeProjects")}
             </span>
 
             {/* Link to full project listing */}
             <Link
               href="/projects"
-              className="text-xs font-body font-medium text-forest-600 hover:text-forest-800 hover:underline transition-colors hidden sm:block"
+              className="text-xs font-body font-medium text-forest-600 hover:text-forest-800 hover:underline transition-colors"
+              aria-label={`${t("map.browseAll")} (list view)`}
             >
               {t("map.browseAll")} →
             </Link>
@@ -100,7 +102,7 @@ export default function MapPage({ projects, fetchedAt }: MapPageProps) {
             <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-forest-50 text-forest-600 px-4 text-center">
               <span className="text-5xl">🌿</span>
               <p className="font-display font-semibold text-lg">{t("map.noProjects")}</p>
-              <p className="text-sm font-body text-forest-400">{t("map.noProjectsDesc")}</p>
+              <p className="text-sm font-body text-[var(--text-secondary)] dark:text-forest-600">{t("map.noProjectsDesc")}</p>
               <Link href="/projects" className="btn-primary text-sm mt-2">
                 {t("map.browseAll")}
               </Link>
@@ -111,7 +113,7 @@ export default function MapPage({ projects, fetchedAt }: MapPageProps) {
 
           {/* Bottom-left attribution note (subtle) --------------------------- */}
           <p className="absolute bottom-2 left-3 z-[1000] text-[10px] text-gray-400 pointer-events-none select-none hidden sm:block">
-            {t("map.dataUpdated").replace("{time}", new Date(fetchedAt).toLocaleTimeString())}
+            {t("map.dataUpdated").replace("{time}", formatTime(fetchedAt))}
           </p>
         </div>
       </div>

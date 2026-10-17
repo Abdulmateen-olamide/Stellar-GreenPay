@@ -11,8 +11,8 @@ import {
   fetchProjects,
   fetchCategoryStats,
 } from "@/lib/api";
-import { formatCO2, formatXLM, progressPercent, shortenAddress } from "@/utils/format";
-import { formatDistanceToNowStrict } from "date-fns";
+import { formatAmount, formatCO2, formatXLM, progressPercent, shortenAddress } from "@/utils/format";
+
 import type { GlobalStats, CategoryStats } from "@/lib/api";
 import type { ClimateProject } from "@/utils/types";
 
@@ -201,9 +201,9 @@ export default function Home({ publicKey, onConnect }: HomeProps) {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* ── Hero ────────────────────────────────────────────────────── */}
-        <div className="text-center pt-20 pb-16 animate-fade-in relative">
+        <div className="text-center pt-20 pb-16 animate-fade-in motion-reduce:animate-none relative">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-forest-200 bg-forest-50 text-forest-700 text-xs font-semibold mb-8 font-body">
-            <span className="w-1.5 h-1.5 rounded-full bg-forest-500 animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-forest-500 animate-pulse motion-reduce:animate-none" />
             Open Source · Built on Stellar · Powered by Soroban
           </div>
 
@@ -215,7 +215,7 @@ export default function Home({ publicKey, onConnect }: HomeProps) {
             </span>
           </h1>
 
-          <p className="text-[#5a7a5a] dark:text-[#8aaa8a] text-lg sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed font-body">
+          <p className="text-[var(--text-secondary)] dark:text-[#8aaa8a] text-lg sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed font-body">
             Stellar GreenPay connects donors with verified climate projects
             worldwide. Donations go directly on-chain — no banks, no delays, no
             fees swallowed by middlemen.
@@ -286,13 +286,13 @@ export default function Home({ publicKey, onConnect }: HomeProps) {
             {FEATURES.map((f) => (
               <div
                 key={f.title}
-                className="card hover:shadow-green transition-all"
+                className="card hover:shadow-green transition-all motion-reduce:transition-none"
               >
                 <div className="text-3xl mb-3">{f.icon}</div>
                 <h3 className="font-display font-semibold text-forest-900 mb-2 text-base">
                   {f.title}
                 </h3>
-                <p className="text-[#5a7a5a] dark:text-[#8aaa8a] text-sm leading-relaxed font-body">
+                <p className="text-[var(--text-secondary)] dark:text-[#8aaa8a] text-sm leading-relaxed font-body">
                   {f.desc}
                 </p>
               </div>
@@ -321,7 +321,7 @@ export default function Home({ publicKey, onConnect }: HomeProps) {
               <Link
                 key={cat.label}
                 href={`/projects?category=${encodeURIComponent(cat.label)}`}
-                className="card text-center hover:shadow-green hover:border-forest-300 transition-all group py-5"
+                className="card text-center hover:shadow-green hover:border-forest-300 transition-all motion-reduce:transition-none group py-5"
               >
                 <div className="text-3xl mb-2">{cat.icon}</div>
                 <p className="text-xs font-semibold text-forest-800 group-hover:text-forest-600 font-body">
@@ -337,7 +337,7 @@ export default function Home({ publicKey, onConnect }: HomeProps) {
           <h2 className="font-display text-3xl font-bold text-forest-900 mb-4">
             Earn Impact Badges
           </h2>
-          <p className="text-[#5a7a5a] dark:text-[#8aaa8a] max-w-xl mx-auto mb-8 font-body">
+          <p className="text-[var(--text-secondary)] dark:text-[#8aaa8a] max-w-xl mx-auto mb-8 font-body">
             As you donate more, you unlock on-chain badges recorded on the
             Stellar blockchain. Show your commitment to the planet.
           </p>
@@ -353,7 +353,7 @@ export default function Home({ publicKey, onConnect }: HomeProps) {
                 <p className="font-display font-semibold text-forest-900 text-sm">
                   {b.name}
                 </p>
-                <p className="text-xs text-[#5a7a5a] dark:text-[#8aaa8a] font-body">
+                <p className="text-xs text-[var(--text-secondary)] dark:text-[#8aaa8a] font-body">
                   {b.threshold}
                 </p>
               </div>
@@ -362,19 +362,41 @@ export default function Home({ publicKey, onConnect }: HomeProps) {
         </div>
 
         {/* ── Footer ──────────────────────────────────────────────────── */}
-        <div className="text-center pb-12 border-t border-forest-100 pt-8">
-          <p className="text-[#4a6a4a] text-sm font-body">
-            Open source · MIT License ·{" "}
+        <footer className="text-center pb-12 border-t border-forest-100 dark:border-forest-800/40 pt-8 space-y-3">
+          <div className="flex flex-wrap items-center justify-center gap-4 text-sm font-body text-[#4a6a4a] dark:text-forest-300">
             <a
-              href="https://github.com/your-org/stellar-greenpay"
+              href="https://discord.gg/greenpay"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-forest-600 transition-colors"
+              className="inline-flex items-center gap-1.5 hover:text-forest-600 dark:hover:text-forest-400 transition-colors"
+              aria-label="Discord Community #greenpay"
             >
-              Contribute on GitHub →
+              <span>💬 Discord (#greenpay)</span>
             </a>
+            <span>·</span>
+            <a
+              href="https://t.me/greenpay_stellar"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 hover:text-forest-600 dark:hover:text-forest-400 transition-colors"
+              aria-label="Telegram Community Group"
+            >
+              <span>✈️ Telegram</span>
+            </a>
+            <span>·</span>
+            <a
+              href="https://github.com/Emmy123222/Stellar-GreenPay"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-forest-600 dark:hover:text-forest-400 transition-colors"
+            >
+              GitHub →
+            </a>
+          </div>
+          <p className="text-[#4a6a4a] dark:text-forest-400 text-xs font-body">
+            Open source · MIT License · Stellar Soroban
           </p>
-        </div>
+        </footer>
       </div>
 
       {/* Wallet connect modal */}
@@ -389,7 +411,7 @@ export default function Home({ publicKey, onConnect }: HomeProps) {
             />
             <button
               onClick={() => setShowConnect(false)}
-              className="mt-4 w-full text-center text-sm text-[#8aaa8a] dark:text-forest-300 hover:text-[#5a7a5a] dark:hover:text-[#8aaa8a] transition-colors font-body"
+              className="mt-4 w-full text-center text-sm text-[var(--text-tertiary)] dark:text-forest-300 hover:text-[var(--text-secondary)] dark:hover:text-[var(--text-tertiary)] transition-colors font-body"
             >
               Cancel
             </button>
@@ -427,11 +449,11 @@ function LiveDonationTicker({ donations }: { donations: LiveDonationTickerItem[]
     <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-forest-800 bg-forest-900/95 backdrop-blur px-4 py-2 overflow-hidden">
       <div className="max-w-6xl mx-auto flex items-center gap-3 text-sm text-white font-body">
         <span className="inline-flex items-center gap-2 text-[11px] uppercase tracking-widest text-forest-300 font-bold shrink-0">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse motion-reduce:animate-none" />
           Live donations
         </span>
         <div key={item.id} className="flex-1 overflow-hidden">
-          <div className="flex items-center gap-2 whitespace-nowrap animate-slide-up">
+          <div className="flex items-center gap-2 whitespace-nowrap animate-slide-up motion-reduce:animate-none">
             <span className="text-emerald-300">⚡ Just now</span>
             <span className="text-forest-100">—</span>
             <span className="font-mono text-forest-100">{donorLabel}</span>
@@ -503,7 +525,7 @@ function CategoryStatsChart({ stats }: { stats: CategoryStats[] }) {
                 style={{ width: "100%" }}
               >
                 <div
-                  className="h-full bg-gradient-to-r from-forest-500 to-forest-600 rounded-full transition-all duration-500 ease-out group-hover:from-forest-600 group-hover:to-forest-700"
+                  className="h-full bg-gradient-to-r from-forest-500 to-forest-600 rounded-full transition-all motion-reduce:transition-none duration-500 ease-out group-hover:from-forest-600 group-hover:to-forest-700"
                   style={{ width: `${percentage}%` }}
                 />
               </div>
@@ -527,7 +549,7 @@ function FeaturedProjectCard({ project }: { project: ClimateProject }) {
           The project making the biggest impact right now
         </p>
       </div>
-      <div className="card border-forest-200 shadow-lg hover:shadow-green transition-all p-6 sm:p-8">
+      <div className="card border-forest-200 shadow-lg hover:shadow-green transition-all motion-reduce:transition-none p-6 sm:p-8">
         <div className="flex flex-col md:flex-row gap-6">
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -541,17 +563,17 @@ function FeaturedProjectCard({ project }: { project: ClimateProject }) {
             <h3 className="font-display text-2xl font-bold text-forest-900 mb-2">
               {project.name}
             </h3>
-            <p className="text-[#5a7a5a] dark:text-[#8aaa8a] text-sm leading-relaxed font-body mb-4 line-clamp-3">
+            <p className="text-[var(--text-secondary)] dark:text-[#8aaa8a] text-sm leading-relaxed font-body mb-4 line-clamp-3">
               {project.description}
             </p>
             <div className="flex flex-wrap gap-4 text-sm mb-5">
               <span className="flex items-center gap-1 text-forest-700 font-body">
-                👥 <strong>{project.donorCount.toLocaleString()}</strong> donors
+                👥 <strong>{formatAmount(project.donorCount, 0)}</strong> donors
               </span>
               <span className="flex items-center gap-1 text-forest-700 font-body">
                 ♻️ <strong>{formatCO2(project.co2OffsetKg)}</strong> offset
               </span>
-              <span className="flex items-center gap-1 text-[#5a7a5a] dark:text-[#8aaa8a] font-body">
+              <span className="flex items-center gap-1 text-[var(--text-secondary)] dark:text-[#8aaa8a] font-body">
                 📍 {project.location}
               </span>
             </div>
@@ -561,7 +583,7 @@ function FeaturedProjectCard({ project }: { project: ClimateProject }) {
                 <span className="font-semibold text-forest-700">
                   {formatXLM(project.raisedXLM)} raised
                 </span>
-                <span className="text-[#5a7a5a] dark:text-[#8aaa8a]">
+                <span className="text-[var(--text-secondary)] dark:text-[#8aaa8a]">
                   {pct}% of {formatXLM(project.goalXLM)}
                 </span>
               </div>
@@ -612,8 +634,8 @@ function CO2OffsetTicker({ stats }: { stats: GlobalStats }) {
         Total CO₂ Offset Across All Donations
       </p>
       <p className="text-forest-300 text-xs font-body mt-2">
-        {stats.totalDonations.toLocaleString()} donations · {stats.totalDonors.toLocaleString()} donors ·{" "}
-        {parseFloat(stats.totalXLMRaised).toLocaleString()} XLM raised
+        {formatAmount(stats.totalDonations, 0)} donations · {formatAmount(stats.totalDonors, 0)} donors ·{" "}
+        {formatXLM(parseFloat(stats.totalXLMRaised))} raised
       </p>
     </div>
   );
@@ -625,7 +647,7 @@ function StatItem({ stat }: { stat: any }) {
     <div ref={elementRef} className="bg-white text-center py-10 px-4">
       <div className="font-display text-4xl font-bold text-gradient-green mb-1">
         {stat.prefix}
-        {count.toLocaleString()}
+        {formatAmount(count, 0)}
         {stat.suffix}
       </div>
       <div className="text-[#4a6a4a] text-sm font-body uppercase tracking-widest font-bold">
