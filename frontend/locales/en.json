@@ -147,7 +147,8 @@
     "confirm": "Confirm",
     "back": "Back",
     "next": "Next",
-    "close": "Close"
+    "close": "Close",
+    "language": "Language"
   },
   "apply": {
     "pageTitle": "Apply for Verification",

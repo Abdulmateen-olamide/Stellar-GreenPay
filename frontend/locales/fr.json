@@ -138,7 +138,8 @@
     "confirm": "Confirmer",
     "back": "Retour",
     "next": "Suivant",
-    "close": "Fermer"
+    "close": "Fermer",
+    "language": "Langue"
   },
   "map": {
     "title": "Carte mondiale des projets",
