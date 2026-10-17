@@ -151,7 +151,8 @@
     "serverErrorTitle": "حدث خطأ ما",
     "serverErrorDescription": "تعذر تحميل هذه الصفحة الآن. حاول مرة أخرى أو ارجع إلى الصفحة الرئيسية.",
     "retry": "حاول مرة أخرى",
-    "backToHome": "العودة إلى الرئيسية"
+    "backToHome": "العودة إلى الرئيسية",
+    "language": "اللغة"
   },
   "apply": {
     "pageTitle": "طلب توثيق المشروع",

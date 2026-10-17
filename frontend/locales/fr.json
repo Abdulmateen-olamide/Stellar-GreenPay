@@ -142,7 +142,8 @@
     "serverErrorTitle": "Une erreur s’est produite",
     "serverErrorDescription": "Nous ne pouvons pas charger cette page pour le moment. Réessayez ou retournez à l’accueil.",
     "retry": "Réessayer",
-    "backToHome": "Retour à l’accueil"
+    "backToHome": "Retour à l’accueil",
+    "language": "Langue"
   },
   "map": {
     "title": "Carte mondiale des projets",

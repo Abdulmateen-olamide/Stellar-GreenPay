@@ -151,7 +151,8 @@
     "serverErrorTitle": "Something went wrong",
     "serverErrorDescription": "We could not load this page right now. Please try again, or return to the home page.",
     "retry": "Try again",
-    "backToHome": "Go home"
+    "backToHome": "Go home",
+    "language": "Language"
   },
   "apply": {
     "pageTitle": "Apply for Verification",

@@ -151,7 +151,8 @@
     "serverErrorTitle": "Algo salió mal",
     "serverErrorDescription": "No pudimos cargar esta página. Inténtalo de nuevo o vuelve a la página de inicio.",
     "retry": "Intentar de nuevo",
-    "backToHome": "Ir al inicio"
+    "backToHome": "Ir al inicio",
+    "language": "Idioma"
   },
   "apply": {
     "pageTitle": "Solicitar Verificación",
