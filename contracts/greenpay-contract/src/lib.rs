@@ -2527,7 +2527,11 @@ impl GreenPayContract {
         env.events().publish((symbol_short!("upgrade"),), admin);
     }
 
-    /// Get the current contract WASM hash.
+    /// Get the WASM hash most recently recorded by an authorized upgrade.
+    ///
+    /// Returns `None` until the first successful call to `upgrade`. This value
+    /// is retained in instance storage so clients can inspect which code hash
+    /// the administrator requested for the current contract.
     pub fn get_contract_wasm_hash(env: Env) -> Option<BytesN<32>> {
         env.storage().instance().get(&DataKey::ContractWasmHash)
     }
