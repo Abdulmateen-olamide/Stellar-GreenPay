@@ -147,7 +147,11 @@
     "confirm": "Confirm",
     "back": "Back",
     "next": "Next",
-    "close": "Close"
+    "close": "Close",
+    "serverErrorTitle": "Something went wrong",
+    "serverErrorDescription": "We could not load this page right now. Please try again, or return to the home page.",
+    "retry": "Try again",
+    "backToHome": "Go home"
   },
   "apply": {
     "pageTitle": "Apply for Verification",
