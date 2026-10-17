@@ -203,7 +203,7 @@ export default function ProjectDetail({
 
   if (loading || !project) {
     return (
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 animate-pulse">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 animate-pulse motion-reduce:animate-none">
         <div className="h-8 bg-forest-200 rounded w-2/3 mb-4" />
         <div className="card space-y-4">
           {[1, 2, 3].map((i) => (
@@ -224,7 +224,7 @@ export default function ProjectDetail({
   const completedCampaigns = campaigns.filter((campaign) => campaign.completed);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 pb-24 sm:pb-10 animate-fade-in">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 pb-24 sm:pb-10 animate-fade-in motion-reduce:animate-none">
       <ProjectHeadMeta project={project} ogProject={ogProject} />
 
       <ToastNotification
