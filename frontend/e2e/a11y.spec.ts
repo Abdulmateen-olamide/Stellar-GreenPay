@@ -120,4 +120,12 @@ test.describe("Accessibility (axe)", () => {
     await expect(page.getByRole("heading", { name: MOCK_PROFILE.displayName })).toBeVisible();
     await assertNoCriticalViolations(page);
   });
+
+  test("project map page has no critical/serious violations and offers a list alternative", async ({ page }) => {
+    await mockApi(page);
+    await page.goto("/map");
+    await expect(page.getByRole("heading", { name: /project world map/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /browse all projects \(list view\)/i })).toHaveAttribute("href", "/projects");
+    await assertNoCriticalViolations(page);
+  });
 });
