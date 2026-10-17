@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Consolidated the three duplicated SSRF helpers (`middleware/ssrf.js`, `services/ssrfCheck.js`, `utils/ssrf.js`) into the single canonical `utils/ssrf.js`; the two redundant modules and their test suites were removed and every test case now guards the one implementation (#1551).
+
 ### Added
 
 - Spanish (`docs/README.es.md`) and French (`docs/README.fr.md`) translations of the README core sections, a language row at the top of `README.md`, and a translation-maintenance note in `CONTRIBUTING.md` (#1596).
