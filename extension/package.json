@@ -5,8 +5,8 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "build": "webpack --config webpack.config.js",
-    "dev": "webpack --watch --config webpack.config.js",
+    "build": "node init && webpack --config webpack.config.js",
+    "dev": "node init && webpack --watch --config webpack.config.js",
     "test": "jest",
     "test:e2e": "playwright test"
   },
