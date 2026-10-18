@@ -74,6 +74,7 @@ export default function ProjectMapMarker({ project, position }: ProjectMapMarker
           {project.imageUrl ? (
             <ProjectImage
               src={project.imageUrl}
+              name={project.name}
               alt={project.name}
               className="w-full h-24 object-cover rounded-lg border border-forest-100"
             />
@@ -105,7 +106,7 @@ export default function ProjectMapMarker({ project, position }: ProjectMapMarker
               aria-label={`${pct.toFixed(0)}% funded`}
             >
               <div
-                className="h-full rounded-full bg-forest-500 transition-all duration-500"
+                className="h-full rounded-full bg-forest-500 transition-all motion-reduce:transition-none duration-500"
                 style={{ width: `${pct}%` }}
               />
             </div>
